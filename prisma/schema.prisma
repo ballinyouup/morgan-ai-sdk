@@ -127,6 +127,9 @@ datasource db {
 model Case {
   id     String @id @default(cuid())
   chats  Chat[]
+  clientName String
+  clientDob String
+  caseNumber String @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   status String @default("open")
