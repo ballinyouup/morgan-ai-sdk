@@ -8,7 +8,6 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 import type { Conversation } from "./chat-interface"
 import { useTheme } from "next-themes"
-import { useEffect, useState } from "react"
 
 interface ChatSidebarProps {
     conversations: Conversation[]
@@ -18,11 +17,6 @@ interface ChatSidebarProps {
 
 export function ChatSidebar({ conversations, selectedId, onSelect }: ChatSidebarProps) {
     const { theme, setTheme } = useTheme()
-    const [mounted, setMounted] = useState(false)
-
-    useEffect(() => {
-        setMounted(true)
-    }, [])
 
     const formatTime = (date: Date) => {
         const now = new Date()
@@ -45,11 +39,10 @@ export function ChatSidebar({ conversations, selectedId, onSelect }: ChatSidebar
                     <h1 className="text-lg font-semibold text-foreground">LegalChat</h1>
                 </div>
                 <div className="flex items-center gap-1">
-                    {mounted && (
-                        <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
-                            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-                        </Button>
-                    )}
+                    <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
+                        {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                    </Button>
+
                     <Button variant="ghost" size="icon">
                         <Settings className="h-4 w-4" />
                     </Button>

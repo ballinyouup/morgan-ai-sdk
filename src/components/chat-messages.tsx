@@ -69,7 +69,6 @@ export function ChatMessages({ messages }: ChatMessagesProps) {
                                     })}
                                 </div>
                                 <span className="text-xs text-muted-foreground px-1">
-                  {formatTime(new Date())}
                 </span>
                             </div>
                         </div>
