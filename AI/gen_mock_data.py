@@ -26,19 +26,15 @@ CASE_TYPES = [
     "Premises Liability"
 ]
 
-CLIENT_DATA = [
-    {"name": "Sarah Johnson", "dob": "1985-03-15"},
-    {"name": "Michael Chen", "dob": "1978-07-22"},
-    {"name": "Emma Rodriguez", "dob": "1992-11-08"},
-    {"name": "David Williams", "dob": "1980-01-30"},
-    {"name": "Lisa Thompson", "dob": "1975-09-12"},
-    {"name": "James Martinez", "dob": "1988-05-25"},
-    {"name": "Amanda Davis", "dob": "1995-12-03"},
-    {"name": "Robert Garcia", "dob": "1983-06-18"},
-    {"name": "Jennifer Lee", "dob": "1990-04-07"},
-    {"name": "Christopher Brown", "dob": "1987-08-14"},
-    {"name": "Maria Gonzalez", "dob": "1982-02-28"},
-    {"name": "William Taylor", "dob": "1979-10-19"}
+CLIENT_NAMES = [
+    "Sarah Johnson", "Michael Chen", "Emma Rodriguez", "David Williams",
+    "Lisa Thompson", "James Martinez", "Amanda Davis", "Robert Garcia",
+    "Jennifer Lee", "Christopher Brown", "Maria Gonzalez", "William Taylor"
+]
+
+CLIENT_DOBS = [
+    "1985-05-12", "1990-08-23", "1978-11-15", "1982-03-07",
+    "1995-09-30", "1988-12-18", "1975-06-25", "1992-04-11"
 ]
 
 PHONE_NUMBERS = [
@@ -46,23 +42,64 @@ PHONE_NUMBERS = [
     "(555) 567-8901", "(555) 678-9012", "(555) 789-0123", "(555) 890-1234"
 ]
 
+PRIORITIES = ["low", "medium", "high", "urgent"]
+STATUSES = ["open", "in_progress", "pending", "on-hold"]
+
 FILE_TYPES = [
-    {"name": "Medical_Bill_ER_Visit.pdf", "path": "/cases/{case_id}/medical/bills/"},
-    {"name": "Xray_Results_Lower_Back.pdf", "path": "/cases/{case_id}/medical/imaging/"},
-    {"name": "Police_Report_Accident.pdf", "path": "/cases/{case_id}/evidence/official/"},
-    {"name": "Insurance_Policy_Document.pdf", "path": "/cases/{case_id}/insurance/"},
-    {"name": "Witness_Statement_John_Doe.pdf", "path": "/cases/{case_id}/evidence/statements/"},
-    {"name": "Property_Damage_Photos.zip", "path": "/cases/{case_id}/evidence/photos/"},
-    {"name": "Medical_Records_Dr_Anderson.pdf", "path": "/cases/{case_id}/medical/records/"},
-    {"name": "Lost_Wages_Documentation.xlsx", "path": "/cases/{case_id}/financial/"},
-    {"name": "Settlement_Demand_Letter.pdf", "path": "/cases/{case_id}/legal/correspondence/"},
-    {"name": "Deposition_Transcript.pdf", "path": "/cases/{case_id}/legal/discovery/"},
+    {
+        "name": "Medical_Bill_ER_Visit.pdf",
+        "url": "https://simplylaw.s3.us-east-1.amazonaws.com/Medical_Bill_ER_Visit.pdf",
+        "type": "pdf",
+        "size": "2.3 MB"
+    },
+    {
+        "name": "Xray_Results_Lower_Back.pdf",
+        "url": "https://simplylaw.s3.us-east-1.amazonaws.com/Xray_Results_Lower_Back.pdf",
+        "type": "pdf",
+        "size": "1.8 MB"
+    },
+    {
+        "name": "Police_Report_Accident.pdf",
+        "url": "https://simplylaw.s3.us-east-1.amazonaws.com/POLICE+REPORT+(1).pdf",
+        "type": "pdf",
+        "size": "3.2 MB"
+    },
+    {
+        "name": "Insurance_Policy_Document.pdf",
+        "url": "https://simplylaw.s3.us-east-1.amazonaws.com/INSURANCE-+POLICY+PROGRESSIVE++.pdf",
+        "type": "pdf",
+        "size": "4.5 MB"
+    },
+    {
+        "name": "Witness_Statement_John_Doe.pdf",
+        "url": "https://simplylaw.s3.us-east-1.amazonaws.com/Witness_Statement.pdf",
+        "type": "pdf",
+        "size": "890 KB"
+    },
+    {
+        "name": "Property_Damage_Photos.zip",
+        "url": "https://simplylaw.s3.us-east-1.amazonaws.com/EST-PHOTOS-04-15-2019_Redacted.pdf",
+        "type": "pdf",
+        "size": "5.4 MB"
+    },
+    {
+        "name": "Medical_Records_Dr_Anderson.pdf",
+        "url": "https://simplylaw.s3.us-east-1.amazonaws.com/Medical_Records.pdf",
+        "type": "pdf",
+        "size": "1.5 MB"
+    },
+    {
+        "name": "Lost_Wages_Documentation.xlsx",
+        "url": "https://simplylaw.s3.us-east-1.amazonaws.com/Lost_Wages.xlsx",
+        "type": "document",
+        "size": "67 KB"
+    },
 ]
 
 EMAIL_TEMPLATES = [
     {
         "subject": "Re: My accident claim - medical bills",
-        "body": """Hi,
+        "content": """Hi,
 
 I hope this email finds you well. I just got back from my follow-up appointment with Dr. Anderson and wanted to update you. The pain in my lower back is still pretty bad, especially when I sit for more than 30 minutes. The doctor said I might need physical therapy for another 6-8 weeks.
 
@@ -74,52 +111,24 @@ Thanks for all your help,
         "files": ["Medical_Bill_ER_Visit.pdf", "Xray_Results_Lower_Back.pdf"]
     },
     {
-        "subject": "Question about my case timeline",
-        "body": """Hello,
+        "subject": "Question about settlement offer",
+        "content": """Hello,
 
-I wanted to check in on the status of my case. It's been a few months now and I'm wondering what the next steps are. My employer has been asking about when I can return to work, but I'm still dealing with pain from the injury.
+The insurance company contacted me directly with a settlement offer. I didn't accept anything yet because I remembered you said to talk to you first. The offer is $15,000 but I'm not sure if that's fair given all my medical expenses and lost work time.
 
-Do you have any updates on when we might hear from the insurance company?
+Can we schedule a call to discuss this?
 
-Best regards,
-{client_name}""",
-        "priority": "low",
-        "files": []
-    },
-    {
-        "subject": "Urgent: Settlement offer received",
-        "body": """Hi,
-
-I just received a letter from the insurance company with a settlement offer. They're offering $75,000 but saying I need to respond within 30 days. I'm not sure if this is a good offer or not.
-
-Can we schedule a call to discuss this? I'm available anytime this week.
-
-Thanks,
+Best,
 {client_name}""",
         "priority": "high",
-        "files": ["Settlement_Demand_Letter.pdf"]
+        "files": []
     },
-    {
-        "subject": "New medical records available",
-        "body": """Hi there,
-
-I got my latest medical records from the hospital and wanted to send them over. The doctor mentioned that I might need surgery if the physical therapy doesn't help.
-
-Let me know if you need anything else from me.
-
-{client_name}""",
-        "priority": "medium",
-        "files": ["Medical_Records_Dr_Anderson.pdf"]
-    }
 ]
 
 TEXT_MESSAGE_TEMPLATES = [
     {"text": "hey i know its late but forgot to mention the store manager saw me fall. also my neighbor knows someone who fell there too??", "priority": "medium"},
     {"text": "hi! went to physical therapy today. they said 3x per week for 2 months. will insurance cover this?", "priority": "low"},
     {"text": "URGENT: insurance company called me directly. i didnt answer. what should i do???", "priority": "high"},
-    {"text": "just got the bill from the ER. its $8000!! is this normal?", "priority": "medium"},
-    {"text": "my boss is pressuring me to come back to work but im still in pain. help!", "priority": "high"},
-    {"text": "thank you so much for all your help. feeling hopeful about this case", "priority": "low"},
 ]
 
 CHAT_TEMPLATES = [
@@ -131,39 +140,70 @@ CHAT_TEMPLATES = [
         {"role": "user", "text": "Client uploaded 8 documents - accident photos, bills, texts. Can you organize these?"},
         {"role": "assistant", "text": "## Document Processing\n\n**Medical (3):** Bills and records\n**Evidence (4):** Photos\n**Communications (1):** Text messages\n\nFiles organized and ready for review."}
     ]},
-    {"messages": [
-        {"role": "user", "text": "Can you summarize all communications from this case in the last 30 days?"},
-        {"role": "assistant", "text": "## 30-Day Communication Summary\n\n**Emails:** 3 received\n- Medical updates (2)\n- Settlement inquiry (1)\n\n**Text Messages:** 5 received\n- Urgent matters (2)\n- General updates (3)\n\n**Key Items:** Settlement offer requires immediate attention."}
-    ]},
-    {"messages": [
-        {"role": "user", "text": "What's the total value of medical bills so far?"},
-        {"role": "assistant", "text": "## Medical Expenses Summary\n\n**Total Documented:** $12,450\n- ER visit: $8,000\n- Follow-up appointments: $1,650\n- Physical therapy: $2,800\n\n**Note:** Additional bills may be pending from recent treatments."}
-    ]},
 ]
 
-def generate_case_number(year: int, index: int) -> str:
-    """Generate a realistic case number format: YYYY-PI-XXXXX"""
-    return f"{year}-PI-{str(index).zfill(5)}"
+CASE_DESCRIPTIONS = [
+    "Slip and fall incident at retail location. Client sustained back injuries.",
+    "Car accident on I-4, rear-end collision. Multiple injuries including whiplash.",
+    "Workers compensation claim for repetitive strain injury.",
+    "Medical malpractice during routine surgery. Seeking compensation for additional procedures.",
+    "Product liability case involving defective household appliance.",
+    "Wrongful death claim following workplace accident.",
+    "Dog bite injury requiring emergency medical treatment.",
+    "Premises liability - inadequate security leading to assault."
+]
 
-async def create_case_with_data(conn, client_data: Dict, case_type: str, case_index: int):
-    """Create a case with all related mock data"""
-    created_date = datetime.now() - timedelta(days=random.randint(30, 180))
-    case_number = generate_case_number(created_date.year, case_index)
+NEXT_ACTIONS = [
+    "Schedule medical evaluation",
+    "Review contract terms",
+    "Gather employment records",
+    "Awaiting survey results",
+    "Prepare court documents",
+    "File motion with court",
+    "Contact insurance adjuster",
+    "Schedule client consultation"
+]
 
-    # Create Case with client info
+async def get_column_names(conn, table_name):
+    """Helper to get actual column names from database"""
+    query = """
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name = $1
+            ORDER BY ordinal_position \
+            """
+    rows = await conn.fetch(query, table_name)
+    return [row['column_name'] for row in rows]
+
+async def create_case_with_data(conn, client_name: str, client_dob: str, case_type: str, case_number: str):
+    """Create a case with all related data matching the actual database schema"""
+
+    status = random.choice(STATUSES)
+    priority = random.choice(PRIORITIES)
+    created_at = datetime.now() - timedelta(days=random.randint(30, 180))
+
+    # Use exact column names as they appear in the database
     case_id = await conn.fetchval(
-        '''INSERT INTO "Case" (id, status, "clientName", "clientDob", "caseNumber", "createdAt", "updatedAt")
-           VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5, $6) RETURNING id''',
-        random.choice(["open", "open", "in_progress"]),
-        client_data["name"],
-        client_data["dob"],
+        '''INSERT INTO "Case"
+           (id, "caseType", "clientName", "clientDob", "caseNumber", status, priority,
+            "assignedTo", description, "nextAction", "createdAt", "lastActivity")
+           VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+               RETURNING id''',
+        case_type,
+        client_name,
+        client_dob,
         case_number,
-        created_date,
+        status,
+        priority,
+        "Emily Rodriguez",
+        random.choice(CASE_DESCRIPTIONS),
+        random.choice(NEXT_ACTIONS),
+        created_at,
         datetime.now()
     )
 
-    # Create Chats with Messages
-    num_chats = random.randint(1, 3)
+    # Create chats with messages
+    num_chats = random.randint(1, 2)
     for i in range(num_chats):
         chat_template = random.choice(CHAT_TEMPLATES)
         chat_id = await conn.fetchval(
@@ -176,174 +216,182 @@ async def create_case_with_data(conn, client_data: Dict, case_type: str, case_in
                 msg["role"], msg["text"], chat_id
             )
 
-    # Create Emails
+    # Create emails
     num_emails = random.randint(2, 4)
     for i in range(num_emails):
         template = random.choice(EMAIL_TEMPLATES)
         subject = template["subject"]
-        body = template["body"].format(client_name=client_data["name"])
-        email_date = datetime.now() - timedelta(days=random.randint(1, 30))
+        content = template["content"].format(client_name=client_name)
 
         await conn.execute(
-            '''INSERT INTO "Email" (id, "caseId", subject, body, "createdAt", "updatedAt")
-               VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5)''',
-            case_id, subject, body, email_date, datetime.now()
+            '''INSERT INTO "Email"
+               (id, "caseId", subject, content, "from", "to", "createdAt", "updatedAt")
+               VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5, $6, $7)''',
+            case_id,
+            subject,
+            content,
+            f"{client_name.lower().replace(' ', '.')}@email.com",
+            "emily.rodriguez@lawfirm.com",
+            datetime.now() - timedelta(days=random.randint(1, 30)),
+            datetime.now()
         )
 
-        # Add files mentioned in email
+        # Add file attachments for emails
         for file_name in template.get("files", []):
             file_info = next((f for f in FILE_TYPES if f["name"] == file_name), None)
             if file_info:
-                path = file_info["path"].format(case_id=case_id) + file_info["name"]
                 await conn.execute(
-                    '''INSERT INTO "Files" (id, "caseId", name, path, "createdAt", "updatedAt")
-                       VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5)''',
-                    case_id, file_info["name"], path,
+                    '''INSERT INTO "Files"
+                           (id, "caseId", name, url, type, size, "uploadedAt", "uploadedBy")
+                       VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5, $6, $7)''',
+                    case_id,
+                    file_info["name"],
+                    file_info["url"],
+                    file_info["type"],
+                    file_info["size"],
                     datetime.now() - timedelta(days=random.randint(1, 20)),
-                    datetime.now()
+                    "Emily Rodriguez"
                 )
 
-    # Create Text Messages
-    num_texts = random.randint(2, 4)
+    # Create text messages
+    num_texts = random.randint(1, 3)
     for i in range(num_texts):
         text_template = random.choice(TEXT_MESSAGE_TEMPLATES)
         phone = random.choice(PHONE_NUMBERS)
-        text_date = datetime.now() - timedelta(hours=random.randint(1, 720))
 
         await conn.execute(
-            '''INSERT INTO "TextMessage" (id, "caseId", text, "from", "to", "createdAt", "updatedAt")
+            '''INSERT INTO "TextMessage"
+                   (id, "caseId", text, "from", "to", "createdAt", "updatedAt")
                VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5, $6)''',
-            case_id, text_template["text"], phone, "(555) 000-0000",
-            text_date, datetime.now()
+            case_id,
+            text_template["text"],
+            phone,
+            "(555) 000-0000",
+            datetime.now() - timedelta(hours=random.randint(1, 72)),
+            datetime.now()
         )
 
-    # Create additional Files
-    num_extra_files = random.randint(4, 8)
+    # Create additional files
+    num_extra_files = random.randint(3, 6)
     for i in range(num_extra_files):
         file_info = random.choice(FILE_TYPES)
-        path = file_info["path"].format(case_id=case_id) + file_info["name"]
-        file_date = datetime.now() - timedelta(days=random.randint(1, 60))
 
         await conn.execute(
-            '''INSERT INTO "Files" (id, "caseId", name, path, "createdAt", "updatedAt")
-               VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5)''',
-            case_id, file_info["name"], path, file_date, datetime.now()
+            '''INSERT INTO "Files"
+                   (id, "caseId", name, url, type, size, "uploadedAt", "uploadedBy")
+               VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5, $6, $7)''',
+            case_id,
+            file_info["name"],
+            file_info["url"],
+            file_info["type"],
+            file_info["size"],
+            datetime.now() - timedelta(days=random.randint(1, 60)),
+            "Emily Rodriguez"
         )
 
-    # Create Reason Chains
+    # Create reason chains
     reason_chains = [
         {
             "agentType": "document_classifier",
             "action": "classified_medical_records",
-            "reasoning": f"Classified {num_extra_files} documents based on content analysis and metadata",
-            "confidence": round(random.uniform(0.85, 0.98), 2),
-            "data": {"categories": ["medical", "legal", "evidence"], "total_files": num_extra_files}
+            "reasoning": f"Classified {num_extra_files} documents based on content analysis",
+            "confidence": 0.95
         },
         {
             "agentType": "priority_analyzer",
             "action": "flagged_urgent_communication",
-            "reasoning": "Settlement offer detected with time-sensitive deadline requiring immediate attorney attention",
-            "confidence": round(random.uniform(0.82, 0.95), 2),
-            "data": {"deadline_days": 30, "offer_amount": 100000}
+            "reasoning": "Settlement offer requires immediate attorney attention",
+            "confidence": 0.88
         },
         {
             "agentType": "task_orchestrator",
             "action": "created_follow_up_tasks",
-            "reasoning": "Generated prioritized task list based on case deadlines and client communications",
-            "confidence": round(random.uniform(0.88, 0.96), 2),
-            "data": {"tasks_created": 5, "high_priority": 2}
-        },
-        {
-            "agentType": "records_wrangler",
-            "action": "extracted_medical_data",
-            "reasoning": "Parsed medical records and extracted key injury details, treatment dates, and provider information",
-            "confidence": round(random.uniform(0.90, 0.99), 2),
-            "data": {"injuries_found": 3, "providers": 2, "treatment_duration_weeks": 8}
-        },
-        {
-            "agentType": "client_communication",
-            "action": "drafted_response",
-            "reasoning": "Prepared response to client inquiry regarding settlement timeline with clear next steps",
-            "confidence": round(random.uniform(0.75, 0.92), 2),
-            "data": {"response_type": "email", "tone": "professional"}
+            "reasoning": "Generated tasks based on deadlines",
+            "confidence": 0.92
         }
     ]
 
-    num_reason_chains = random.randint(3, 5)
-    for entry in random.sample(reason_chains, num_reason_chains):
+    for entry in reason_chains:
         await conn.execute(
-            '''INSERT INTO "ReasonChain" (id, "caseId", "agentType", action, reasoning, confidence, timestamp, data)
+            '''INSERT INTO "ReasonChain"
+               (id, "caseId", "agentType", action, reasoning, confidence, timestamp, data)
                VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5, $6, $7)''',
-            case_id, entry["agentType"], entry["action"], entry["reasoning"],
-            entry["confidence"], datetime.now() - timedelta(minutes=random.randint(10, 500)),
-            json.dumps(entry["data"])
+            case_id,
+            entry["agentType"],
+            entry["action"],
+            entry["reasoning"],
+            entry["confidence"],
+            datetime.now() - timedelta(minutes=random.randint(10, 500)),
+            json.dumps({"case_type": case_type})
         )
 
     return case_id
 
 async def populate_database():
-    """Main function to populate database with mock data"""
     print("🏛️  Morgan & Morgan AI - Mock Data Generation")
     print("=" * 80)
 
     if not DATABASE_URL:
-        print("❌ ERROR: DATABASE_URL not found in environment variables")
+        print("❌ ERROR: DATABASE_URL not found")
         return
 
     try:
         print("\n📊 Connecting to database...")
         conn = await asyncpg.connect(DATABASE_URL, statement_cache_size=0)
-        print("✅ Connected successfully")
+        print("✅ Connected")
+
+        # Debug: Print actual column names
+        print("\n🔍 Checking database schema...")
+        case_columns = await get_column_names(conn, "Case")
+        print(f"   Case table columns: {', '.join(case_columns)}")
 
         print("\n🧹 Clearing existing data...")
-        tables = ["ReasonChain", "TextMessage", "Files", "Email", "Message", "Chat", "Case"]
-        for table in tables:
-            count = await conn.fetchval(f'SELECT COUNT(*) FROM "{table}"')
+        for table in ["ReasonChain", "TextMessage", "Files", "Email", "Message", "Chat", "Case"]:
             await conn.execute(f'DELETE FROM "{table}"')
-            print(f"  ✓ Cleared {count} records from {table}")
+        print("✅ Cleared")
 
-        print("\n📝 Generating cases with mock data...")
+        print("\n📝 Generating cases...")
+
         case_count = 0
-        stats = {"chats": 0, "messages": 0, "emails": 0, "files": 0, "texts": 0, "reasons": 0}
+        stats = {"chats": 0, "emails": 0, "files": 0, "texts": 0, "reasons": 0}
 
-        for i, client_data in enumerate(CLIENT_DATA[:10]):
+        for i, client_name in enumerate(CLIENT_NAMES[:8]):
             case_type = CASE_TYPES[i % len(CASE_TYPES)]
-            case_id = await create_case_with_data(conn, client_data, case_type, i + 1)
+            client_dob = CLIENT_DOBS[i % len(CLIENT_DOBS)]
+            case_number = f"CASE-{2025}-{str(i+1).zfill(4)}"
+
+            case_id = await create_case_with_data(conn, client_name, client_dob, case_type, case_number)
             case_count += 1
 
-            # Collect statistics
-            chats = await conn.fetchval(f'SELECT COUNT(*) FROM "Chat" WHERE "caseId" = $1', case_id)
-            messages = await conn.fetchval(f'SELECT COUNT(*) FROM "Message" m JOIN "Chat" c ON m."chatId" = c.id WHERE c."caseId" = $1', case_id)
-            emails = await conn.fetchval(f'SELECT COUNT(*) FROM "Email" WHERE "caseId" = $1', case_id)
-            files = await conn.fetchval(f'SELECT COUNT(*) FROM "Files" WHERE "caseId" = $1', case_id)
-            texts = await conn.fetchval(f'SELECT COUNT(*) FROM "TextMessage" WHERE "caseId" = $1', case_id)
-            reasons = await conn.fetchval(f'SELECT COUNT(*) FROM "ReasonChain" WHERE "caseId" = $1', case_id)
+            # Update stats
+            for key, table in [
+                ("chats", "Chat"),
+                ("emails", "Email"),
+                ("files", "Files"),
+                ("texts", "TextMessage"),
+                ("reasons", "ReasonChain")
+            ]:
+                stats[key] += await conn.fetchval(
+                    f'SELECT COUNT(*) FROM "{table}" WHERE "caseId" = $1',
+                    case_id
+                )
 
-            stats["chats"] += chats
-            stats["messages"] += messages
-            stats["emails"] += emails
-            stats["files"] += files
-            stats["texts"] += texts
-            stats["reasons"] += reasons
-
-            print(f"  ✓ Case {case_count}: {client_data['name']} ({client_data['dob']}) - {case_type}")
-            print(f"    → {chats} chats, {messages} msgs, {emails} emails, {files} files, {texts} texts, {reasons} reason chains")
+            print(f"  ✓ Case {case_count}: {client_name} - {case_type} ({case_number})")
 
         await conn.close()
 
         print("\n" + "=" * 80)
-        print(f"✅ SUCCESS! Generated {case_count} cases with comprehensive mock data")
-        print(f"\n📋 Total Summary:")
-        print(f"   • Chats: {stats['chats']}")
-        print(f"   • Messages: {stats['messages']}")
-        print(f"   • Emails: {stats['emails']}")
-        print(f"   • Files: {stats['files']}")
-        print(f"   • Text Messages: {stats['texts']}")
-        print(f"   • Reason Chains: {stats['reasons']}")
-        print("\n🤖 Database ready for testing!")
+        print(f"✅ SUCCESS! Generated {case_count} cases")
+        print(f"\n📋 Summary:")
+        print(f"   • {stats['chats']} chats")
+        print(f"   • {stats['emails']} emails")
+        print(f"   • {stats['files']} files")
+        print(f"   • {stats['texts']} text messages")
+        print(f"   • {stats['reasons']} reason chains")
+        print("\n🤖 Database ready!")
 
     except Exception as e:
-        print(f"\n❌ Error occurred: {e}")
+        print(f"\n❌ Error: {e}")
         import traceback
         traceback.print_exc()
 
