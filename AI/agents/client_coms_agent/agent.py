@@ -37,7 +37,7 @@ class ClientCommunicationAgent:
         )
 
     def get_instruction(self):
-        return """You are the Client Communication agent for LexiLoop.
+        return """You are the Client Communication agent for SimplyLaw.
 
 Your responsibilities:
 1. Analyze client messages for emotional content, urgency, and specific concerns
@@ -294,7 +294,7 @@ Always remember: You draft - humans approve. Client satisfaction is paramount.
         print("Client Communication Agent Initialized")
         print(f"{'='*60}\n")
 
-        APP_NAME = "saulgoodman"
+        APP_NAME = "SimplyLaw"
 
         #prob replace these later with unique ids
         USER_ID = input_data['ID']['userid']
