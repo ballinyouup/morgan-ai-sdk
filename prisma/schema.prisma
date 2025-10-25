@@ -134,6 +134,9 @@ model Case {
   updatedAt DateTime @updatedAt
   status String @default("open")
   emails Email[]
+  files Files[]
+  textMessages TextMessage[]
+  reasonChains ReasonChain[]
 }
 
 model Chat {
