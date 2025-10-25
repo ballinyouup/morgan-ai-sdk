@@ -4,7 +4,6 @@ from prisma import Prisma
 from datetime import datetime
 import json
 
-
 class DatabaseTool:
     def __init__(self):
         self.db = Prisma()

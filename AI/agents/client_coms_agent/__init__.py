@@ -1,3 +1,3 @@
-from . import agents
+from .agent import ClientCommunicationAgent
 
-__all__= ['docu_sage_agent']
+__all__ = ['ClientCommunicationAgent']
