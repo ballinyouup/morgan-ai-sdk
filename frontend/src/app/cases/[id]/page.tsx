@@ -23,8 +23,8 @@ import {
 } from "lucide-react"
 import { notFound } from "next/navigation"
 
-export default async function CaseDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
+export default function CaseDetailPage({ params }: { params: { id: string }}) {
+  const { id } = params
 
   const case_ = mockCases.find((c) => c.id === id)
 
