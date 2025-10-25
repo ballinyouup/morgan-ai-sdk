@@ -1,5 +1,6 @@
 import { google } from '@ai-sdk/google';
-import { UIMessage, convertToModelMessages, Experimental_Agent as Agent, stepCountIs } from 'ai';
+import { UIMessage, convertToModelMessages, Experimental_Agent as Agent, stepCountIs, tool } from 'ai';
+import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 
 // Allow streaming responses up to 30 seconds
@@ -8,7 +9,16 @@ export const maxDuration = 30;
 const agent = new Agent({
     model: google('gemini-2.5-flash'),
     tools: {
-        // Add your tools here
+        weather: tool({
+            description: 'Get the weather in a location',
+            inputSchema: z.object({
+                location: z.string().describe('The location to get the weather for'),
+            }),
+            execute: async ({ location }) => ({
+                location,
+                temperature: 72 + Math.floor(Math.random() * 21) - 10,
+            }),
+        }),
     },
     stopWhen: stepCountIs(20),
 });
