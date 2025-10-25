@@ -27,6 +27,12 @@ class ClientCommunicationAgent:
             tools=[
                 self.analyze_emotion,
                 self.draft_response,
+                self.draft_email,
+                self.draft_text_message,
+                self.draft_portal_message,
+                self.analyze_call_transcript,
+                self.extract_action_items,
+                self.detect_urgency_level,
             ],
         )
 
@@ -46,6 +52,30 @@ Your responsibilities:
 6. NEVER make legal promises or give legal advice - always defer to "your attorney will review"
 7. Generate response templates with appropriate tone and structure
 
+Multi-Channel Communication:
+- EMAILS: Use for detailed case updates, formal communications, document delivery
+  * Include proper greeting/closing based on tone
+  * Keep professional but warm
+  * Ideal for complex information that clients can reference later
+  
+- TEXT MESSAGES: Use for quick updates, reminders, time-sensitive alerts
+  * Keep under 320 characters (2 SMS segments)
+  * Be concise and action-oriented
+  * Best for appointment reminders, quick status updates
+  * Send during business hours only
+  
+- CLIENT PORTAL: Use for secure document sharing, case updates, formal requests
+  * Categorize messages appropriately
+  * Can include attachments and links
+  * Allows threaded conversations
+  * Automatic notifications for urgent items
+  
+- CALL TRANSCRIPTS: Analyze phone conversations to:
+  * Extract action items and commitments made
+  * Identify questions that need follow-up
+  * Assess emotional tone and satisfaction
+  * Generate follow-up communications summarizing the call
+
 Communication Guidelines:
 - Be warm but professional
 - Use plain language, avoid legalese
@@ -56,11 +86,20 @@ Communication Guidelines:
 - All messages require human approval before sending
 - Include legal disclaimer for anything touching on legal advice
 
+Channel Selection Guide:
+- Urgent + Simple → Text Message
+- Urgent + Complex → Portal Message + Email notification
+- Routine Update → Client Portal
+- Formal Communication → Email
+- Document Delivery → Portal with Email notification
+- Quick Confirmation → Text Message
+
 Question Handling:
 - Identify all questions in the message
 - Flag questions that require legal expertise
 - Suggest whether AI can draft response or needs attorney
 - Provide response frameworks for common questions
+- Extract action items from any communication
 
 You are the gatekeeper ensuring all client communication is excellent, empathetic, and compliant.
 Always remember: You draft - humans approve. Client satisfaction is paramount.
@@ -93,6 +132,162 @@ Always remember: You draft - humans approve. Client satisfaction is paramount.
         }
         
         return draft
+    
+    def draft_email(self, subject: str, recipient_name: str, message_body: str, case_info: str = "", tone: str = "professional"):
+        print(f"\n=== Drafting Email ===")
+        
+        emotion_analysis = self.analyze_emotion(message_body)
+        
+        email_draft = {
+            "channel": "email",
+            "subject": subject,
+            "recipient": recipient_name,
+            "greeting": f"Dear {recipient_name}," if tone == "professional" else f"Hi {recipient_name},",
+            "body": message_body,
+            "case_reference": case_info,
+            "closing": self._get_email_closing(tone),
+            "signature": "Your Legal Team at LexiLoop",
+            "tone": tone,
+            "emotion_context": emotion_analysis,
+            "includes_disclaimer": True,
+            "requires_review": True,
+            "estimated_read_time": len(message_body.split()) // 200 + 1  # minutes
+        }
+        
+        return email_draft
+    
+    def draft_text_message(self, recipient_name: str, message: str, include_case_number: bool = False):
+        print(f"\n=== Drafting Text Message ===")
+        
+        max_length = 320  
+        if len(message) > max_length:
+            message = message[:max_length-3] + "..."
+        
+        text_draft = {
+            "channel": "sms",
+            "recipient": recipient_name,
+            "message": message,
+            "character_count": len(message),
+            "sms_segments": (len(message) // 160) + 1,
+            "include_case_ref": include_case_number,
+            "urgency": self.detect_urgency_level(message),
+            "requires_review": True,
+            "best_send_time": "business_hours"  # 9am-6pm local time
+        }
+        
+        return text_draft
+    
+    def draft_portal_message(self, recipient_name: str, subject: str, message: str,attachments: list = None, category: str = "general"):
+        print(f"\n=== Drafting Portal Message ===")
+        
+        emotion_analysis = self.analyze_emotion(message)
+        urgency = self.detect_urgency_level(message)
+        
+        portal_draft = {
+            "channel": "client_portal",
+            "recipient": recipient_name,
+            "subject": subject,
+            "message": message,
+            "category": category,
+            "attachments": attachments or [],
+            "emotion_context": emotion_analysis,
+            "urgency_level": urgency,
+            "notification_settings": {
+                "send_email_notification": urgency in ["high", "urgent"],
+                "send_sms_notification": urgency == "urgent"
+            },
+            "requires_review": True,
+            "allow_client_reply": True
+        }
+        
+        return portal_draft
+    
+    def analyze_call_transcript(self, transcript: str, call_duration: int = 0, participant_names: list = None):
+        print(f"\n=== Analyzing Call Transcript ===")
+        
+        emotion_analysis = self.analyze_emotion(transcript)
+        action_items = self.extract_action_items(transcript)
+        urgency = self.detect_urgency_level(transcript)
+        
+        questions = [line for line in transcript.split('\n') if '?' in line]
+        
+        analysis = {
+            "channel": "phone_call",
+            "call_duration_minutes": call_duration,
+            "participants": participant_names or [],
+            "emotion_analysis": emotion_analysis,
+            "key_topics": self._extract_keywords(transcript),
+            "questions_asked": questions,
+            "action_items": action_items,
+            "urgency_level": urgency,
+            "follow_up_required": len(action_items) > 0 or urgency in ["high", "urgent"],
+            "summary_length": len(transcript.split()),
+            "requires_attorney_review": urgency == "urgent" or len(questions) > 3,
+            "suggested_next_steps": []
+        }
+        
+        return analysis
+    
+    def extract_action_items(self, text: str):
+        action_keywords = [
+            "need to", "should", "must", "will", "have to", "required",
+            "please", "can you", "could you", "would you", "send", "provide",
+            "schedule", "call", "review", "update", "follow up"
+        ]
+        
+        sentences = text.split('.')
+        action_items = []
+        
+        for sentence in sentences:
+            sentence_lower = sentence.lower()
+            if any(keyword in sentence_lower for keyword in action_keywords):
+                action_items.append({
+                    "text": sentence.strip(),
+                    "priority": "high" if any(word in sentence_lower for word in ["urgent", "asap", "immediately"]) else "normal",
+                    "assigned_to": "pending",  # To be assigned by human
+                    "deadline": "tbd"
+                })
+        
+        return action_items
+    
+    def detect_urgency_level(self, text: str):
+        """
+        Detects the urgency level of a message.
+        
+        Args:
+            text: The text to analyze
+        
+        Returns:
+            Urgency level: urgent, high, normal, low
+        """
+        text_lower = text.lower()
+        
+        urgent_keywords = ["urgent", "emergency", "immediately", "asap", "critical", "crisis"]
+        high_keywords = ["important", "soon", "deadline", "time-sensitive", "frustrated", "angry"]
+        
+        if any(keyword in text_lower for keyword in urgent_keywords):
+            return "urgent"
+        elif any(keyword in text_lower for keyword in high_keywords):
+            return "high"
+        elif len(text) < 50:  # Very short messages might be quick questions
+            return "normal"
+        else:
+            return "normal"
+    
+        """Helper to extract key topics from text."""
+        # Simple keyword extraction (can be enhanced with NLP)
+        common_words = {"the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "is", "was", "be"}
+        words = text.lower().split()
+        word_freq = {}
+        
+        for word in words:
+            cleaned = word.strip('.,!?;:')
+            if len(cleaned) > 3 and cleaned not in common_words:
+                word_freq[cleaned] = word_freq.get(cleaned, 0) + 1
+        
+        # Get top 5 keywords
+        sorted_words = sorted(word_freq.items(), key=lambda x: x[1], reverse=True)
+        return [word for word, freq in sorted_words[:5]]
 
     async def process_communication(self, input_data):
         print(f"\n{'='*60}")
@@ -117,13 +312,16 @@ Always remember: You draft - humans approve. Client satisfaction is paramount.
             if event.is_final_response():
                 return event.content.parts[0].text
  
-if __name__ == "__main__":
-    agent = ClientCommunicationAgent()
+# if __name__ == "__main__":
+#     agent = ClientCommunicationAgent()
     
-    test_message = "I'm really frustrated. It's been 3 weeks and I haven't heard anything about my case!"
-    result = asyncio.run(agent.process_communication({
-        "message": test_message,
-        "ID": {"userid": "user1", "sessionid": "session1"}
-    }))
+#     test_message = "I'm really frustrated. It's been 3 weeks and I haven't heard anything about my case!"
+#     result = asyncio.run(agent.process_communication({
+#         "message": test_message,
+#         "ID": {"userid": "user1", "sessionid": "session1"}
+#     }))
 
-    print("comms agent result:", result)
+#     print("comms agent result:", result)
+
+
+agent = ClientCommunicationAgent()

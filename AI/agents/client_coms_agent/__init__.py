@@ -1,3 +1,3 @@
-from . import agent
+from .agent import ClientCommunicationAgent
 
-__all__= ['client_coms_agent']
+__all__ = ['ClientCommunicationAgent']
