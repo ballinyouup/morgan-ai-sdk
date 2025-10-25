@@ -23,19 +23,28 @@ export function DashboardNav() {
         const isActive = pathname === item.href
 
         return (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-              isActive
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-            )}
-          >
-            <Icon className="h-4 w-4" />
-            {item.label}
-          </Link>
+          <div key={item.href} className="relative group">
+            {/* Hover effect background */}
+            <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-transparent via-yellow-300/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            
+            <Link
+              href={item.href}
+              className={cn(
+                "relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200",
+                isActive
+                  ? "bg-yellow-300/20 text-yellow-300 border border-yellow-300/30"
+                  : "text-gray-300 hover:text-yellow-300 hover:bg-gray-700/50",
+              )}
+            >
+              <Icon className={cn(
+                "h-4 w-4 transition-all duration-200",
+                isActive 
+                  ? "text-yellow-300" 
+                  : "text-gray-400 group-hover:text-yellow-300 group-hover:scale-110"
+              )} />
+              {item.label}
+            </Link>
+          </div>
         )
       })}
     </nav>

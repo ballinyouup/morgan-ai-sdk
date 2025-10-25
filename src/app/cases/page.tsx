@@ -40,70 +40,76 @@ export default function CasesPage() {
   const closedCases = filteredCases.filter((c) => c.status === "closed")
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Cases</h1>
-          <p className="text-muted-foreground">Manage and track all your legal cases</p>
+    <div className="space-y-6 p-6">
+      {/* Glassy header section */}
+      <div className="bg-gray-800/30 backdrop-blur-lg border border-gray-700/50 rounded-xl p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-white">Cases</h1>
+            <p className="text-gray-400">Manage and track all your legal cases</p>
+          </div>
+          <Button className="bg-yellow-300 text-gray-900 hover:bg-yellow-400 font-medium">New Case</Button>
         </div>
-        <Button>New Case</Button>
       </div>
 
       {/* Filters */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center">
-            <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by client name or case type..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8"
-              />
+      <div className="relative group">
+        <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-transparent via-yellow-300/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-400"></div>
+        <Card className="relative bg-gray-800/50 backdrop-blur-lg border-gray-700/50 rounded-xl m-[1px] z-10">
+          <CardContent className="pt-6">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center">
+              <div className="relative flex-1">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search by client name or case type..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-8 bg-gray-700/50 border-gray-600 text-white placeholder:text-gray-400 focus:border-yellow-300/50 focus:ring-yellow-300/20"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Select value={sortBy} onValueChange={(value: "date" | "priority") => setSortBy(value)}>
+                  <SelectTrigger className="w-[180px] bg-gray-700/50 border-gray-600 text-white">
+                    <ArrowUpDown className="h-4 w-4 mr-2 text-gray-400" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-gray-800 border-gray-700 text-white">
+                    <SelectItem value="date" className="hover:bg-gray-700 hover:text-yellow-300">Sort by Date</SelectItem>
+                    <SelectItem value="priority" className="hover:bg-gray-700 hover:text-yellow-300">Sort by Priority</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={filterStatus} onValueChange={(value: CaseStatus | "all") => setFilterStatus(value)}>
+                  <SelectTrigger className="w-[180px] bg-gray-700/50 border-gray-600 text-white">
+                    <Filter className="h-4 w-4 mr-2 text-gray-400" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-gray-800 border-gray-700 text-white">
+                    <SelectItem value="all" className="hover:bg-gray-700 hover:text-yellow-300">All Statuses</SelectItem>
+                    <SelectItem value="active" className="hover:bg-gray-700 hover:text-yellow-300">Active</SelectItem>
+                    <SelectItem value="pending" className="hover:bg-gray-700 hover:text-yellow-300">Pending</SelectItem>
+                    <SelectItem value="on-hold" className="hover:bg-gray-700 hover:text-yellow-300">On Hold</SelectItem>
+                    <SelectItem value="closed" className="hover:bg-gray-700 hover:text-yellow-300">Closed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div className="flex gap-2">
-              <Select value={sortBy} onValueChange={(value: "date" | "priority") => setSortBy(value)}>
-                <SelectTrigger className="w-[180px]">
-                  <ArrowUpDown className="h-4 w-4 mr-2" />
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="date">Sort by Date</SelectItem>
-                  <SelectItem value="priority">Sort by Priority</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={filterStatus} onValueChange={(value: CaseStatus | "all") => setFilterStatus(value)}>
-                <SelectTrigger className="w-[180px]">
-                  <Filter className="h-4 w-4 mr-2" />
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="on-hold">On Hold</SelectItem>
-                  <SelectItem value="closed">Closed</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Cases Tabs */}
       <Tabs defaultValue="active" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="active">
-            Active <Badge className="ml-2">{activeCases.length}</Badge>
+        <TabsList className="bg-gray-800/50 backdrop-blur-lg border border-gray-700/50">
+          <TabsTrigger value="active" className="data-[state=active]:bg-yellow-300/20 data-[state=active]:text-yellow-300 text-gray-300">
+            Active <Badge className="ml-2 bg-yellow-300/20 text-yellow-300">{activeCases.length}</Badge>
           </TabsTrigger>
-          <TabsTrigger value="pending">
-            Pending <Badge className="ml-2">{pendingCases.length}</Badge>
+          <TabsTrigger value="pending" className="data-[state=active]:bg-yellow-300/20 data-[state=active]:text-yellow-300 text-gray-300">
+            Pending <Badge className="ml-2 bg-gray-700 text-gray-300">{pendingCases.length}</Badge>
           </TabsTrigger>
-          <TabsTrigger value="on-hold">
-            On Hold <Badge className="ml-2">{onHoldCases.length}</Badge>
+          <TabsTrigger value="on-hold" className="data-[state=active]:bg-yellow-300/20 data-[state=active]:text-yellow-300 text-gray-300">
+            On Hold <Badge className="ml-2 bg-gray-700 text-gray-300">{onHoldCases.length}</Badge>
           </TabsTrigger>
-          <TabsTrigger value="closed">Closed</TabsTrigger>
+          <TabsTrigger value="closed" className="data-[state=active]:bg-yellow-300/20 data-[state=active]:text-yellow-300 text-gray-300">Closed</TabsTrigger>
         </TabsList>
 
         <TabsContent value="active" className="space-y-4">
@@ -129,61 +135,67 @@ export default function CasesPage() {
 function CasesList({ cases }: { cases: Case[] }) {
   if (cases.length === 0) {
     return (
-      <Card>
-        <CardContent className="flex flex-col items-center justify-center py-12">
-          <p className="text-lg font-medium">No cases found</p>
-          <p className="text-sm text-muted-foreground">Try adjusting your filters</p>
-        </CardContent>
-      </Card>
+      <div className="relative group">
+        <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-transparent via-yellow-300/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-400"></div>
+        <Card className="relative bg-gray-800/50 backdrop-blur-lg border-gray-700/50 rounded-xl m-[1px] z-10">
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <p className="text-lg font-medium text-white">No cases found</p>
+            <p className="text-sm text-gray-400">Try adjusting your filters</p>
+          </CardContent>
+        </Card>
+      </div>
     )
   }
 
   return (
     <div className="grid gap-4">
       {cases.map((case_) => (
-        <Card key={case_.id} className="hover:bg-accent/50 transition-colors">
-          <CardHeader>
-            <div className="flex items-start justify-between">
-              <div className="space-y-1 flex-1">
-                <div className="flex items-center gap-2">
-                  <CardTitle className="text-lg">{case_.clientName}</CardTitle>
-                  <Badge
-                    variant={
-                      case_.priority === "urgent" ? "destructive" : case_.priority === "high" ? "default" : "secondary"
-                    }
-                  >
-                    {case_.priority}
-                  </Badge>
-                  <Badge variant="outline">{case_.status}</Badge>
+        <div key={case_.id} className="relative group">
+          <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-transparent via-yellow-300/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-400"></div>
+          <Card className="relative bg-gray-800/50 backdrop-blur-lg border-gray-700/50 rounded-xl m-[1px] z-10 hover:bg-gray-700/50 transition-colors">
+            <CardHeader>
+              <div className="flex items-start justify-between">
+                <div className="space-y-1 flex-1">
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-lg text-white">{case_.clientName}</CardTitle>
+                    <Badge
+                      variant={
+                        case_.priority === "urgent" ? "destructive" : case_.priority === "high" ? "default" : "secondary"
+                      }
+                    >
+                      {case_.priority}
+                    </Badge>
+                    <Badge variant="outline" className="border-gray-600 text-gray-300">{case_.status}</Badge>
+                  </div>
+                  <CardDescription className="text-gray-400">{case_.caseType}</CardDescription>
                 </div>
-                <CardDescription>{case_.caseType}</CardDescription>
+                <Button variant="ghost" size="sm" className="text-gray-300 hover:text-yellow-300 hover:bg-gray-700/50" asChild>
+                  <Link href={`/cases/${case_.id}`}>View Details</Link>
+                </Button>
               </div>
-              <Button variant="ghost" size="sm" asChild>
-                <Link href={`/cases/${case_.id}`}>View Details</Link>
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">{case_.description}</p>
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <div className="flex items-center gap-4">
-                  <span>Assigned to: {case_.assignedTo}</span>
-                  <span>•</span>
-                  <span>Created: {new Date(case_.createdAt).toLocaleDateString()}</span>
-                  <span>•</span>
-                  <span>Last activity: {new Date(case_.lastActivity).toLocaleDateString()}</span>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <p className="text-sm text-gray-400">{case_.description}</p>
+                <div className="flex items-center justify-between text-xs text-gray-500">
+                  <div className="flex items-center gap-4">
+                    <span>Assigned to: {case_.assignedTo}</span>
+                    <span>•</span>
+                    <span>Created: {new Date(case_.createdAt).toLocaleDateString()}</span>
+                    <span>•</span>
+                    <span>Last activity: {new Date(case_.lastActivity).toLocaleDateString()}</span>
+                  </div>
                 </div>
+                {case_.nextAction && (
+                  <div className="flex items-center gap-2 pt-2 border-t border-gray-600">
+                    <span className="text-xs font-medium text-white">Next Action:</span>
+                    <span className="text-xs text-gray-400">{case_.nextAction}</span>
+                  </div>
+                )}
               </div>
-              {case_.nextAction && (
-                <div className="flex items-center gap-2 pt-2 border-t">
-                  <span className="text-xs font-medium">Next Action:</span>
-                  <span className="text-xs text-muted-foreground">{case_.nextAction}</span>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       ))}
     </div>
   )
