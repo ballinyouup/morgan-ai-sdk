@@ -3,7 +3,6 @@ from dotenv import load_dotenv
 from google.adk.agents import Agent
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
-import torch
 from transformers import pipeline
 import asyncio
 from google.genai import types
@@ -11,15 +10,13 @@ from google.genai import types
 
 load_dotenv(".env")
 
-MODEL_ID = "gemini-2.0-flash-exp"
+MODEL_ID = "gemini-2.5-flash"
 
 class ClientCommunicationAgent:
     def __init__(self):
         self.api_key = os.getenv("GOOGLE_API_KEY")
         if not self.api_key:
             raise ValueError("GOOGLE_API_KEY not set")
-        
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         self.agent = Agent(
             name="client_communication_guru",
