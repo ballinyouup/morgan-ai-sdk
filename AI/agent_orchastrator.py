@@ -1,526 +1,375 @@
 import os
-import sys
-from pathlib import Path
-from typing import Dict, Any, List, Optional
-from dotenv import load_dotenv
-from google.genai import types
-from google.adk.agents import Agent
-from google.adk.runners import Runner
-from google.adk.sessions import InMemorySessionService
 import asyncio
-import json
-from datetime import datetime
-
-# Add project root to Python path
-project_root = Path(__file__).parent.parent
-if str(project_root) not in sys.path:
-    sys.path.insert(0, str(project_root))
-
-# Import agents
-from AI.agents.docu_agent.agent import DocuAgent
-from AI.agents.sherlock_agent.agent import SherlockAgent
-from AI.agents.client_coms_agent.agent import ClientCommunicationAgent
-
-load_dotenv(".env")
-
-MODEL_ID = "gemini-2.5-flash"
+from typing import List, Dict, Any, Optional
+from enum import Enum
+from google import genai
+from utils.file_converter import FileConverter
+from utils.conversation_manager import ConversationManager
+from agents.docu_agent.agent import DocuAgent
+from agents.sherlock_agent.agent import SherlockAgent
+from agents.client_coms_agent.agent import ClientCommunicationAgent
 
 
-class AgentOrchestrator:
-    """
-    AI Orchestrator that routes requests to appropriate agents based on user intent.
-    
-    Workflow:
-    1. Input → Text Conversion
-    2. Orchestrator analyzes intent
-    3. Routes to: Coms Agent | Doc Agent | Collaborative Mode (Doc ⟷ Sherlock)
-    4. Coms Agent formats final output
-    5. Return to client
-    """
-    
-    def __init__(self):
-        self.api_key = os.getenv("GOOGLE_API_KEY")
+class AgentType(Enum):
+    COMS = "client_coms"
+    DOCU = "docu"
+    SHERLOCK = "sherlock"
+    ANALYSIS = "analysis"  # Triggers Doc + Sherlock conversation
+
+
+class AIOrchestrator:
+    def __init__(self, api_key: Optional[str] = None):
+        self.api_key = api_key or os.getenv("GOOGLE_API_KEY")
         if not self.api_key:
-            raise ValueError("GOOGLE_API_KEY environment variable not set.")
+            raise ValueError("GOOGLE_API_KEY environment variable or api_key parameter required")
         
-        # Initialize all agents
-        self.doc_agent = DocuAgent()
-        self.sherlock_agent = SherlockAgent(docu_agent=self.doc_agent)
+        # Initialize Gemini client
+        self.client = genai.Client(api_key=self.api_key)
+        self.model_id = "gemini-2.5-flash"
+        
+        # Initialize utilities
+        self.file_converter = FileConverter()
+        self.conversation_manager = ConversationManager()
+        
+        # Initialize agents
+        self.docu_agent = DocuAgent()
+        self.sherlock_agent = SherlockAgent(docu_agent=self.docu_agent)
         self.coms_agent = ClientCommunicationAgent()
         
-        # Create orchestrator agent with routing logic
-        self.agent = Agent(
-            name="orchestrator",
-            model=MODEL_ID,
-            description="Master orchestrator that analyzes requests and routes to appropriate specialized agents.",
-            instruction=self.get_instruction(),
-            tools=[
-                self.route_to_coms_agent,
-                self.route_to_doc_agent,
-                self.route_to_collaborative_mode,
-                self.analyze_user_intent,
+        # Define agent capabilities for intent classification
+        self.agent_capabilities = {
+            AgentType.COMS: [
+                "email communication",
+                "client messaging",
+                "drafting responses",
+                "communication setup",
+                "sending messages",
+                "formatting communications",
+                "client correspondence"
+            ],
+            AgentType.ANALYSIS: [
+                "data analysis",
+                "document review",
+                "case analysis",
+                "finding insights",
+                "comparing information",
+                "generating ideas",
+                "strategic thinking",
+                "evidence evaluation",
+                "pattern recognition"
             ]
+        }
+    
+    def _build_intent_prompt(self, user_request: str, file_contents: List[Dict[str, str]]):
+        files_summary = "\n".join([
+            f"- {fc['filename']} ({fc['file_type']}): {fc['text'][:200]}..."
+            for fc in file_contents
+        ])
+        
+        prompt = f"""You are an AI agent router. Analyze the user's request and determine which agent should handle it.
+
+User Request: {user_request}
+
+Files Provided:
+{files_summary}
+
+Available Agents:
+1. COMS Agent: Handles email communication, client messaging, drafting responses, setting up communications
+2. ANALYSIS: Handles data analysis, document review, case analysis, generating ideas, strategic thinking (involves Doc and Sherlock agents working together)
+
+Consider:
+- If the user needs help with communications, emails, or messaging → COMS
+- If the user needs help analyzing data, reviewing documents, or coming up with ideas → ANALYSIS
+
+Respond with ONLY ONE WORD: either "COMS" or "ANALYSIS"
+"""
+        return prompt
+    
+    async def determine_agent(self, user_request: str, file_contents: List[Dict[str, str]]):
+        prompt = self._build_intent_prompt(user_request, file_contents)
+        
+        try:
+            response = self.client.models.generate_content(
+                model=self.model_id,
+                contents=prompt
+            )
+            intent = response.text.strip().upper()
+            
+            if "COMS" in intent:
+                return AgentType.COMS
+            elif "ANALYSIS" in intent:
+                return AgentType.ANALYSIS
+            else:
+                # Default to analysis if unclear
+                return AgentType.ANALYSIS
+                
+        except Exception as e:
+            print(f"Error determining intent: {e}")
+            # Default to analysis
+            return AgentType.ANALYSIS
+    
+    async def convert_files(self, file_urls: List[str]):
+        file_contents = []
+        
+        for url in file_urls:
+            try:
+                result = self.file_converter.convert_to_text(url)
+                file_contents.append(result)
+            except Exception as e:
+                print(f"Error converting {url}: {e}")
+                file_contents.append({
+                    "filename": url.split('/')[-1],
+                    "file_type": "error",
+                    "text": f"Error processing file: {str(e)}"
+                })
+        
+        return file_contents
+    
+    async def run_analysis_conversation(self, user_request: str, file_contents: List[Dict[str, str]], max_iterations: int = 10):
+        # Initialize conversation
+        conversation_id = self.conversation_manager.create_conversation(
+            agent1_name="docu",
+            agent2_name="sherlock"
         )
         
-        print(f"\n{'='*80}")
-        print("🎭 AI ORCHESTRATOR INITIALIZED")
-        print(f"{'='*80}")
-        print("✅ Doc Agent: Ready")
-        print("✅ Sherlock Agent: Ready")
-        print("✅ Client Coms Agent: Ready")
-        print(f"{'='*80}\n")
-    
-    def get_instruction(self):
-        return """You are the AI Orchestrator for LexiLoop, the master router that directs requests to specialized agents.
-
-Your CRITICAL responsibility is to analyze each request and route it to the correct agent(s):
-
-🔹 ROUTE TO CLIENT_COMS_AGENT when:
-   - User wants to draft emails, texts, or messages
-   - Need to communicate with clients
-   - Setting up communication templates
-   - General correspondence tasks
-   - Direct output to client with no analysis needed
-
-🔹 ROUTE TO DOC_AGENT when:
-   - User wants document processing only
-   - Need to extract text from files
-   - Need to classify documents
-   - Need to extract key information (dates, amounts, names)
-   - Simple data retrieval tasks
-   - No strategic analysis required
-
-🔹 ROUTE TO COLLABORATIVE_MODE when:
-   - User needs strategic analysis or case strategy
-   - Need ideas, recommendations, or creative solutions
-   - Request involves "analyze", "investigate", "what should I do"
-   - Need multiple perspectives (logical + creative)
-   - Complex problem requiring debate and consensus
-   - Case evaluation or settlement recommendations
-
-ROUTING DECISION TREE:
-1. First, identify PRIMARY intent (communication, processing, or analysis)
-2. If communication → use route_to_coms_agent
-3. If simple document processing → use route_to_doc_agent
-4. If strategic/creative analysis → use route_to_collaborative_mode
-
-COLLABORATIVE MODE PROCESS:
-- Doc Agent analyzes data logically (facts, evidence, data)
-- Sherlock Agent analyzes strategically (patterns, implications, ideas)
-- They have a conversation (max 10 iterations) to debate and reach consensus
-- Coms Agent formats the consensus for client delivery
-
-IMPORTANT:
-- ALWAYS use the routing tools to delegate work
-- NEVER try to answer complex questions yourself
-- Your job is to ROUTE, not to answer
-- Be decisive about routing - analyze intent and route immediately
-- If unsure between Doc and Collaborative, choose Collaborative
-- All responses should ultimately flow through Coms Agent for formatting
-
-You are the traffic controller. Route efficiently and accurately.
-"""
-    
-    def analyze_user_intent(self, user_message: str) -> Dict[str, Any]:
-        """
-        Analyze user's message to determine intent and optimal routing.
+        # Prepare file context
+        files_context = "\n\n".join([
+            f"=== {fc['filename']} ===\n{fc['text']}"
+            for fc in file_contents
+        ])
         
-        Args:
-            user_message: The user's input message
-            
-        Returns:
-            Intent analysis with routing recommendation
-        """
-        message_lower = user_message.lower()
+        # Initial prompt to Doc agent (using ADK interface)
+        initial_prompt = f"""User Request: {user_request}
+
+Files to analyze:
+{files_context}
+
+Please analyze these files and provide your logical, data-driven assessment."""
         
-        # Define intent keywords
-        coms_keywords = [
-            'email', 'draft', 'write', 'message', 'text', 'communicate',
-            'send', 'reply', 'respond', 'letter', 'correspondence'
-        ]
-        
-        doc_keywords = [
-            'process', 'extract', 'read', 'classify', 'document',
-            'pdf', 'file', 'scan', 'ocr', 'parse'
-        ]
-        
-        analysis_keywords = [
-            'analyze', 'investigate', 'strategy', 'recommend', 'evaluate',
-            'assess', 'review', 'opinion', 'think', 'ideas', 'should i',
-            'what do you think', 'advice', 'settlement', 'case strength'
-        ]
-        
-        # Calculate intent scores
-        coms_score = sum(1 for keyword in coms_keywords if keyword in message_lower)
-        doc_score = sum(1 for keyword in doc_keywords if keyword in message_lower)
-        analysis_score = sum(1 for keyword in analysis_keywords if keyword in message_lower)
-        
-        # Determine primary intent
-        scores = {
-            'communication': coms_score,
-            'document_processing': doc_score,
-            'strategic_analysis': analysis_score
+        # Start conversation with Doc agent
+        doc_input = {
+            "message": initial_prompt,
+            "ID": {"userid": "orchestrator", "sessionid": conversation_id}
         }
+        doc_response = await self.docu_agent.process_document(doc_input)
         
-        primary_intent = max(scores, key=scores.get)
-        confidence = scores[primary_intent] / max(sum(scores.values()), 1)
+        self.conversation_manager.add_message(
+            conversation_id,
+            "docu",
+            doc_response
+        )
         
-        # Determine routing
-        if primary_intent == 'communication':
-            recommended_route = 'coms_agent'
-        elif primary_intent == 'document_processing' and analysis_score == 0:
-            recommended_route = 'doc_agent'
-        else:
-            recommended_route = 'collaborative_mode'
+        current_speaker = "sherlock"
         
-        return {
-            "primary_intent": primary_intent,
-            "intent_scores": scores,
-            "confidence": round(confidence, 2),
-            "recommended_route": recommended_route,
-            "reasoning": f"Primary intent is {primary_intent} with {scores[primary_intent]} matching keywords"
-        }
-    
-    def route_to_coms_agent(self, user_message: str, context: str = "") -> Dict[str, Any]:
-        """
-        Route request directly to Client Communications Agent.
-        
-        Use when user wants to draft communications, send messages, or handle client-facing tasks.
-        
-        Args:
-            user_message: The user's request
-            context: Additional context or case information
+        # Run conversation loop
+        for iteration in range(max_iterations):
+            conversation_history = self.conversation_manager.get_conversation(conversation_id)
             
-        Returns:
-            Formatted communication response
-        """
-        print(f"\n📧 Routing to CLIENT COMS AGENT")
-        print(f"   Request: {user_message[:100]}...")
-        
-        # For now, return a structured response
-        # In full implementation, this would call the coms agent's async method
-        return {
-            "agent": "client_coms_agent",
-            "status": "success",
-            "response_type": "communication",
-            "message": f"Client Coms Agent will handle: {user_message}",
-            "context": context
-        }
-    
-    def route_to_doc_agent(self, file_paths: List[str] = None, case_folder: str = None) -> Dict[str, Any]:
-        """
-        Route request to Document Agent for processing.
-        
-        Use when user wants document processing, text extraction, or classification without analysis.
-        
-        Args:
-            file_paths: List of specific files to process
-            case_folder: Path to case folder containing multiple documents
-            
-        Returns:
-            Document processing results
-        """
-        print(f"\n📄 Routing to DOC AGENT")
-        
-        if case_folder:
-            print(f"   Processing case folder: {case_folder}")
-            results = self.doc_agent.process_case_folder(case_folder)
-        elif file_paths:
-            print(f"   Processing {len(file_paths)} files")
-            results = {
-                "files_processed": [self.doc_agent.process_file(fp) for fp in file_paths]
-            }
-        else:
-            return {
-                "agent": "doc_agent",
-                "status": "error",
-                "error": "No files or case folder specified"
-            }
-        
-        return {
-            "agent": "doc_agent",
-            "status": "success",
-            "response_type": "document_processing",
-            "results": results
-        }
-    
-    def route_to_collaborative_mode(
-        self, 
-        user_question: str, 
-        case_folder: str = None,
-        max_iterations: int = 10
-    ) -> Dict[str, Any]:
-        """
-        Route to Collaborative Mode: Doc Agent ⟷ Sherlock Agent conversation.
-        
-        Use when user needs strategic analysis, ideas, recommendations, or complex problem-solving.
-        
-        Process:
-        1. Doc Agent processes documents and forms logical analysis
-        2. Sherlock Agent reviews and adds strategic insights
-        3. They have a conversation (debate/consensus building)
-        4. Results are formatted by Coms Agent for client delivery
-        
-        Args:
-            user_question: The strategic question or analysis request
-            case_folder: Path to case folder (if applicable)
-            max_iterations: Maximum conversation iterations (default: 10)
-            
-        Returns:
-            Consensus analysis from both agents
-        """
-        print(f"\n🤝 Routing to COLLABORATIVE MODE")
-        print(f"   Question: {user_question[:100]}...")
-        print(f"   Max iterations: {max_iterations}")
-        
-        conversation_log = []
-        
-        # Step 1: Doc Agent processes documents (if case folder provided)
-        if case_folder:
-            print(f"\n📄 Step 1: Doc Agent processing documents...")
-            doc_results = self.doc_agent.process_case_folder(case_folder)
-            conversation_log.append({
-                "iteration": 0,
-                "agent": "doc_agent",
-                "action": "document_processing",
-                "summary": f"Processed {doc_results.get('summary', {}).get('successful', 0)} documents"
-            })
-        else:
-            doc_results = None
-            print(f"\n📄 Step 1: No documents to process, proceeding with question only")
-        
-        # Step 2: Doc Agent forms initial logical analysis
-        print(f"\n🧠 Step 2: Doc Agent analyzing...")
-        doc_initial_analysis = {
-            "agent": "doc_agent",
-            "perspective": "logical",
-            "analysis": "Logical, fact-based analysis based on evidence",
-            "documents_reviewed": doc_results.get('summary', {}).get('successful', 0) if doc_results else 0,
-            "key_findings": ["Finding 1", "Finding 2", "Finding 3"],
-            "opinion": "Objective assessment based on data"
-        }
-        conversation_log.append({
-            "iteration": 1,
-            "agent": "doc_agent",
-            "statement": doc_initial_analysis
-        })
-        
-        # Step 3: Sherlock Agent adds strategic perspective
-        print(f"\n🔍 Step 3: Sherlock Agent analyzing...")
-        
-        # If we have case data, use Sherlock's full analysis
-        if doc_results and case_folder:
-            # Request document processing through Sherlock's A2A communication
-            sherlock_processing = self.sherlock_agent.request_document_processing(case_folder)
-            
-            if sherlock_processing.get('success'):
-                # Perform comprehensive analysis
-                sherlock_analysis = self.sherlock_agent.perform_full_case_analysis()
+            if current_speaker == "sherlock":
+                # Sherlock's turn
+                sherlock_prompt = f"""User Request: {user_request}
+
+Files context:
+{files_context}
+
+Docu Agent's analysis:
+{doc_response}
+
+Conversation so far:
+{self._format_conversation_history(conversation_history)}
+
+Please provide your creative, investigative perspective and try to find alternative explanations or insights."""
                 
-                sherlock_initial_analysis = {
-                    "agent": "sherlock_agent",
-                    "perspective": "strategic",
-                    "analysis": sherlock_analysis,
-                    "case_strength": sherlock_analysis.get('case_strength_score', {}),
-                    "settlement_range": sherlock_analysis.get('settlement_evaluation', {}).get('settlement_range', {}),
-                    "next_steps": sherlock_analysis.get('next_steps', {}).get('immediate_actions', []),
-                    "strategic_insights": sherlock_analysis.get('case_strategy', {})
+                sherlock_input = {
+                    "message": sherlock_prompt,
+                    "ID": {"userid": "orchestrator", "sessionid": conversation_id}
                 }
+                response = await self.sherlock_agent.analyze_case(sherlock_input)
+                self.conversation_manager.add_message(conversation_id, "sherlock", response)
+                current_speaker = "docu"
+                
             else:
-                sherlock_initial_analysis = {
-                    "agent": "sherlock_agent",
-                    "perspective": "strategic",
-                    "error": "Could not process documents",
-                    "details": sherlock_processing
+                # Doc's turn
+                last_sherlock = conversation_history[-1]["content"]
+                doc_prompt = f"""User Request: {user_request}
+
+Sherlock's latest response:
+{last_sherlock}
+
+Conversation so far:
+{self._format_conversation_history(conversation_history)}
+
+Please respond with your logical analysis. If you've reached a consensus or have nothing new to add, indicate that."""
+                
+                doc_input = {
+                    "message": doc_prompt,
+                    "ID": {"userid": "orchestrator", "sessionid": conversation_id}
                 }
-        else:
-            sherlock_initial_analysis = {
-                "agent": "sherlock_agent",
-                "perspective": "strategic",
-                "analysis": "Creative, strategic analysis with multiple perspectives",
-                "patterns_identified": ["Pattern 1", "Pattern 2"],
-                "strategic_recommendations": ["Strategy 1", "Strategy 2"],
-                "opinion": "Strategic assessment with creative solutions"
-            }
-        
-        conversation_log.append({
-            "iteration": 2,
-            "agent": "sherlock_agent",
-            "statement": sherlock_initial_analysis
-        })
-        
-        # Step 4: Conversation loop (simplified for now)
-        print(f"\n💬 Step 4: Agent conversation...")
-        
-        # In full implementation, this would be an actual back-and-forth
-        # For now, we'll simulate a few iterations
-        for i in range(3, min(max_iterations, 6)):
-            # Alternate between agents
-            current_agent = "doc_agent" if i % 2 == 1 else "sherlock_agent"
+                response = await self.docu_agent.process_document(doc_input)
+                self.conversation_manager.add_message(conversation_id, "docu", response)
+                current_speaker = "sherlock"
             
-            conversation_log.append({
-                "iteration": i,
-                "agent": current_agent,
-                "statement": f"Iteration {i}: Refining analysis and building consensus..."
-            })
-            
-            print(f"   Iteration {i}: {current_agent} speaking...")
+            # Check if agents have reached consensus
+            if self._check_consensus(conversation_history):
+                break
         
-        # Step 5: Generate consensus
-        print(f"\n🤝 Step 5: Generating consensus...")
-        consensus = {
-            "question": user_question,
-            "doc_agent_perspective": doc_initial_analysis,
-            "sherlock_agent_perspective": sherlock_initial_analysis,
-            "conversation_iterations": len(conversation_log),
-            "consensus_reached": True,
-            "final_recommendation": self._generate_consensus(
-                doc_initial_analysis, 
-                sherlock_initial_analysis
-            ),
-            "confidence": "high",
-            "areas_of_agreement": [
-                "Both agents agree on core facts",
-                "Strategic recommendations aligned",
-                "Risk assessment consistent"
-            ],
-            "areas_of_debate": [
-                "Timeline for action items",
-                "Settlement value ranges"
-            ]
-        }
+        # Get final conversation state
+        final_conversation = self.conversation_manager.get_conversation(conversation_id)
         
-        # Step 6: Format through Coms Agent
-        print(f"\n📧 Step 6: Coms Agent formatting output...")
+        # Generate consensus summary
+        consensus = await self._generate_consensus(user_request, final_conversation)
         
         return {
-            "agent": "collaborative_mode",
-            "status": "success",
-            "response_type": "strategic_analysis",
-            "conversation_log": conversation_log,
-            "consensus": consensus,
-            "ready_for_client": True
+            "conversation_id": conversation_id,
+            "iterations": len(final_conversation),
+            "conversation": final_conversation,
+            "consensus": consensus
         }
     
-    def _generate_consensus(self, doc_analysis: Dict, sherlock_analysis: Dict) -> str:
-        """Generate a consensus summary from both agent analyses."""
-        
-        return f"""
-CONSENSUS ANALYSIS:
-
-Based on collaborative analysis between our logical document processor (Doc Agent) 
-and strategic investigator (Sherlock Agent), we've reached the following consensus:
-
-LOGICAL PERSPECTIVE (Doc Agent):
-{doc_analysis.get('opinion', 'Fact-based assessment')}
-
-STRATEGIC PERSPECTIVE (Sherlock Agent):
-{sherlock_analysis.get('opinion', 'Strategic assessment')}
-
-UNIFIED RECOMMENDATION:
-After {10} iterations of analysis and debate, both agents agree on a comprehensive 
-approach that balances logical evidence with strategic considerations.
-
-This recommendation represents the best of both analytical rigor and creative 
-problem-solving to serve your case effectively.
-"""
+    def _format_conversation_history(self, history: List[Dict[str, Any]]):
+        formatted = []
+        for msg in history:
+            formatted.append(f"{msg['agent'].upper()}: {msg['content']}\n")
+        return "\n".join(formatted)
     
-    async def process_request(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Main entry point for processing requests through the orchestrator.
+    def _check_consensus(self, conversation_history: List[Dict[str, Any]]):
+        if len(conversation_history) < 4:
+            return False
         
-        Args:
-            input_data: Dictionary containing:
-                - message: User's request/question
-                - files: Optional list of file paths
-                - case_folder: Optional case folder path
-                - ID: Session information
-                
-        Returns:
-            Orchestrated response from appropriate agent(s)
-        """
-        print(f"\n{'='*80}")
-        print("🎭 ORCHESTRATOR PROCESSING REQUEST")
-        print(f"{'='*80}\n")
+        # Check last few messages for consensus keywords
+        recent_messages = [msg['content'].lower() for msg in conversation_history[-3:]]
+        consensus_keywords = [
+            "agree", "consensus", "concluded", "final", 
+            "nothing new", "settled", "aligned"
+        ]
         
-        user_message = input_data.get('message', '')
-        files = input_data.get('files', [])
-        case_folder = input_data.get('case_folder')
+        return any(
+            keyword in message 
+            for message in recent_messages 
+            for keyword in consensus_keywords
+        )
+    
+    async def _generate_consensus(self, user_request: str, conversation: List[Dict[str, Any]]):
+        conversation_text = self._format_conversation_history(conversation)
         
-        # Analyze intent
-        intent = self.analyze_user_intent(user_message)
-        print(f"📊 Intent Analysis:")
-        print(f"   Primary Intent: {intent['primary_intent']}")
-        print(f"   Confidence: {intent['confidence']}")
-        print(f"   Recommended Route: {intent['recommended_route']}")
-        print(f"   Reasoning: {intent['reasoning']}\n")
+        prompt = f"""Based on the following conversation between Doc (logical analyst) and Sherlock (creative investigator), 
+generate a comprehensive consensus summary that addresses the user's request.
+
+User Request: {user_request}
+
+Conversation:
+{conversation_text}
+
+Provide a clear, actionable summary that combines both perspectives."""
         
-        # Route based on intent
-        if intent['recommended_route'] == 'coms_agent':
-            result = self.route_to_coms_agent(user_message)
+        response = self.client.models.generate_content(
+            model=self.model_id,
+            contents=prompt
+        )
+        return response.text
+    
+    async def process_request(self, user_request: str, file_urls: List[str], return_address: Optional[str] = None):
+        print(f"🎭 Orchestrator: Processing request with {len(file_urls)} files")
         
-        elif intent['recommended_route'] == 'doc_agent':
-            result = self.route_to_doc_agent(
-                file_paths=files if files else None,
-                case_folder=case_folder
+        # Step 1: Convert files to text
+        print("📄 Converting files to text...")
+        file_contents = await self.convert_files(file_urls)
+        print(f"✅ Converted {len(file_contents)} files")
+        
+        # Step 2: Determine which agent to use
+        print("🤔 Determining appropriate agent...")
+        agent_type = await self.determine_agent(user_request, file_contents)
+        print(f"✅ Selected agent: {agent_type.value}")
+        
+        result = {
+            "user_request": user_request,
+            "files_processed": len(file_contents),
+            "agent_type": agent_type.value,
+            "file_contents": file_contents
+        }
+        
+        # Step 3: Route to appropriate agent(s)
+        if agent_type == AgentType.COMS:
+            # Direct to communications agent
+            print("📧 Routing to Communications Agent...")
+            
+            files_context = "\n\n".join([
+                f"=== {fc['filename']} ===\n{fc['text']}"
+                for fc in file_contents
+            ])
+            
+            coms_prompt = f"""User Request: {user_request}
+
+Files provided:
+{files_context}
+
+Please help with the communication task."""
+            
+            coms_input = {
+                "message": coms_prompt,
+                "ID": {"userid": "orchestrator", "sessionid": "coms_session"}
+            }
+            coms_response = await self.coms_agent.process_communication(coms_input)
+            
+            result["response"] = coms_response
+            result["workflow"] = "API → Orchestrator → Com → Out"
+            
+        elif agent_type == AgentType.ANALYSIS:
+            # Run Doc + Sherlock conversation
+            print("🔍 Initiating analysis conversation between Doc and Sherlock...")
+            
+            analysis_result = await self.run_analysis_conversation(
+                user_request,
+                file_contents,
+                max_iterations=10
             )
+            
+            # Send consensus to Coms agent for final formatting
+            print("📧 Sending consensus to Communications Agent for formatting...")
+            
+            coms_prompt = f"""Please format this analysis for the client:
+
+User's Original Request: {user_request}
+
+Analysis Consensus:
+{analysis_result['consensus']}
+
+Create a clear, professional response."""
+            
+            coms_input = {
+                "message": coms_prompt,
+                "ID": {"userid": "orchestrator", "sessionid": "coms_format_session"}
+            }
+            final_response = await self.coms_agent.process_communication(coms_input)
+            
+            result["analysis"] = analysis_result
+            result["response"] = final_response
+            result["workflow"] = "API → Orchestrator → Doc → Sherlock → Com → Out"
         
-        else:  # collaborative_mode
-            result = self.route_to_collaborative_mode(
-                user_question=user_message,
-                case_folder=case_folder
-            )
-        
-        # Add metadata
-        result['intent_analysis'] = intent
-        result['timestamp'] = datetime.now().isoformat()
-        
-        print(f"\n{'='*80}")
-        print("✅ ORCHESTRATOR REQUEST COMPLETE")
-        print(f"{'='*80}\n")
-        
+        print("✅ Request processing complete!")
         return result
 
 
-# For testing
-if __name__ == "__main__":
-    orchestrator = AgentOrchestrator()
+async def main():
+    orchestrator = AIOrchestrator()
     
-    # Test different routing scenarios
-    test_cases = [
-        {
-            "name": "Communication Request",
-            "input": {
-                "message": "Draft an email to my client about their case update",
-                "ID": {"userid": "user1", "sessionid": "session1"}
-            }
-        },
-        {
-            "name": "Document Processing",
-            "input": {
-                "message": "Process the documents in this case folder",
-                "case_folder": "AI/data/test/case_1",
-                "ID": {"userid": "user1", "sessionid": "session2"}
-            }
-        },
-        {
-            "name": "Strategic Analysis",
-            "input": {
-                "message": "Analyze this case and recommend a settlement strategy",
-                "case_folder": "AI/data/test/case_1",
-                "ID": {"userid": "user1", "sessionid": "session3"}
-            }
-        }
+    file_urls = [
+        "https://simplylaw.s3.us-east-1.amazonaws.com/POLICE+REPORT+(1).pdf",
+        "https://simplylaw.s3.us-east-1.amazonaws.com/File+Notes.docx"
     ]
     
-    for test in test_cases:
-        print(f"\n{'='*80}")
-        print(f"TEST: {test['name']}")
-        print(f"{'='*80}")
-        
-        result = asyncio.run(orchestrator.process_request(test['input']))
-        
-        print(f"\n📊 RESULT:")
-        print(json.dumps(result, indent=2, default=str))
-        print(f"\n{'='*80}\n")
+    result = await orchestrator.process_request(
+        user_request="What are the key facts of this case and what strategy should we pursue?",
+        file_urls=file_urls
+    )
+    
+    print("\n" + "="*80)
+    print("FINAL RESULT:")
+    print("="*80)
+    print(f"Agent Type: {result['agent_type']}")
+    print(f"Workflow: {result['workflow']}")
+    print(f"\nResponse:\n{result['response']}")
 
+
+if __name__ == "__main__":
+    asyncio.run(main())

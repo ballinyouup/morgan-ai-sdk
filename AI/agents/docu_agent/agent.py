@@ -80,33 +80,33 @@ Always maintain confidentiality and accuracy in all document processing tasks.
 """
     
     def extract_text_from_image(self, image_path: str):
-            if not os.path.exists(image_path):
-                return {
-                    "success": False,
-                    "error": f"Image file not found: {image_path}",
-                    "text": ""
-                }
-            
-            image = cv2.imread(image_path)
-            if image is None:
-                return {
-                    "success": False,
-                    "error": f"Failed to read image: {image_path}",
-                    "text": ""
-                }
-
-            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-            
-            _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-            text = pytesseract.image_to_string(thresh)
-            
+        if not os.path.exists(image_path):
             return {
-                "success": True,
-                "text": text,
-                "image_path": image_path,
-                "confidence": "high" if len(text) > 50 else "low",
-                "preprocessed": True
+                "success": False,
+                "error": f"Image file not found: {image_path}",
+                "text": ""
             }
+        
+        image = cv2.imread(image_path)
+        if image is None:
+            return {
+                "success": False,
+                "error": f"Failed to read image: {image_path}",
+                "text": ""
+            }
+
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        
+        _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        text = pytesseract.image_to_string(thresh)
+        
+        return {
+            "success": True,
+            "text": text,
+            "image_path": image_path,
+            "confidence": "high" if len(text) > 50 else "low",
+            "preprocessed": True
+        }
     
     def extract_text_from_pdf(self, pdf_path: str):
         if not os.path.exists(pdf_path):
@@ -384,7 +384,24 @@ Always maintain confidentiality and accuracy in all document processing tasks.
         session_service = InMemorySessionService()
         await session_service.create_session(app_name=APP_NAME, user_id=USER_ID, session_id=SESSION_ID)
 
-        runner = Runner(agent=self.agent, app_name=APP_NAME, session_service=session_service)
+        # Create a conversation-only agent without tools to avoid function calling issues
+        conversation_agent = Agent(
+            name="docu_agent_conversation",
+            model=MODEL_ID,
+            description="Document analysis agent for case analysis conversations",
+            instruction="""You are the Docu Agent, specializing in logical, evidence-based document analysis.
+            
+Focus on:
+- Factual review of documents
+- Evidence-based conclusions
+- Document organization
+- Key information extraction
+- Objective analysis
+
+Provide clear, logical analysis based on the information shared. Be concise and evidence-focused."""
+        )
+
+        runner = Runner(agent=conversation_agent, app_name=APP_NAME, session_service=session_service)
         content = types.Content(role='user', parts=[types.Part(text=input_data['message'])])
         events = runner.run(user_id=USER_ID, session_id=SESSION_ID, new_message=content)
 

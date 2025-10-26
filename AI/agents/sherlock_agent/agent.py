@@ -2,7 +2,6 @@ import os
 import sys
 from pathlib import Path
 
-# Add project root to Python path
 project_root = Path(__file__).parent.parent.parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
@@ -18,6 +17,7 @@ import cv2
 import asyncio
 import re
 import json
+from AI.agents.docu_agent import DocuAgent
 from datetime import datetime
 from typing import Dict, List, Any, Optional
 
@@ -169,15 +169,6 @@ You are the critical thinking partner that helps legal teams build stronger case
         return critical[:10]
     
     def request_document_processing(self, case_folder_path: str) -> Dict[str, Any]:
-        """
-        Request document processing from DocuAgent for a specific case folder.
-        
-        Args:
-            case_folder_path: Absolute or relative path to the case folder containing documents
-            
-        Returns:
-            Dictionary containing processed case data or error message
-        """
         if not self.docu_agent:
             return {
                 "success": False,
@@ -647,15 +638,6 @@ You are the critical thinking partner that helps legal teams build stronger case
         }
     
     def perform_full_case_analysis(self, case_data: Dict[str, Any] = None) -> Dict[str, Any]:
-        """
-        Perform comprehensive case analysis on processed documents.
-        
-        Args:
-            case_data: Optional case data. If not provided, will use self.case_data
-            
-        Returns:
-            Complete analysis dictionary
-        """
         # Use provided case_data or fall back to stored case_data
         if case_data is None:
             if self.case_data is None:
@@ -788,7 +770,24 @@ You are the critical thinking partner that helps legal teams build stronger case
         session_service = InMemorySessionService()
         await session_service.create_session(app_name=APP_NAME, user_id=USER_ID, session_id=SESSION_ID)
 
-        runner = Runner(agent=self.agent, app_name=APP_NAME, session_service=session_service)
+        # Create a conversation-only agent without tools to avoid function calling issues
+        conversation_agent = Agent(
+            name="sherlock_agent_conversation",
+            model=MODEL_ID,
+            description="Strategic analytical agent for case analysis conversations",
+            instruction="""You are the Sherlock Agent, providing strategic analysis and creative insights on legal cases.
+            
+Focus on:
+- Pattern recognition and inconsistencies
+- Strategic recommendations
+- Alternative perspectives
+- Risk assessment
+- Settlement strategies
+
+Provide clear, actionable analysis based on the information shared. Be concise and direct."""
+        )
+
+        runner = Runner(agent=conversation_agent, app_name=APP_NAME, session_service=session_service)
         content = types.Content(role='user', parts=[types.Part(text=input_data['message'])])
         events = runner.run(user_id=USER_ID, session_id=SESSION_ID, new_message=content)
 
@@ -798,9 +797,6 @@ You are the critical thinking partner that helps legal teams build stronger case
 
 
 if __name__ == "__main__":
-    # Import DocuAgent here to avoid circular imports
-    from AI.agents.docu_agent import DocuAgent
-    
     print("\n" + "=" * 80)
     print("SHERLOCK AGENT - COMPREHENSIVE CASE ANALYSIS WITH A2A")
     print("=" * 80)
@@ -809,11 +805,9 @@ if __name__ == "__main__":
     docu_agent = DocuAgent()
     sherlock_agent = SherlockAgent(docu_agent=docu_agent)
     
-    # Get case folder path from command line argument or use default
     if len(sys.argv) > 1:
         case_folder = sys.argv[1]
     else:
-        # List available test cases
         test_data_path = Path(__file__).parent.parent.parent / "data" / "test"
         if test_data_path.exists():
             available_cases = [d.name for d in test_data_path.iterdir() if d.is_dir() and not d.name.startswith('.')]

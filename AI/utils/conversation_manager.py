@@ -1,48 +1,58 @@
-"""
-Conversation Manager for Agent-to-Agent Collaboration
-
-Manages multi-turn conversations between Doc Agent and Sherlock Agent
-to reach consensus on strategic analysis questions.
-"""
-
 import json
+import uuid
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 
 
 class ConversationManager:
-    """
-    Manages conversations between Doc Agent and Sherlock Agent.
-    
-    Features:
-    - Turn-based conversation with max iterations
-    - Consensus detection
-    - Conversation history tracking
-    - Response formatting
-    """
-    
     def __init__(self, max_iterations: int = 10):
         self.max_iterations = max_iterations
+        self.conversations: Dict[str, Dict[str, Any]] = {}
+    
+    def create_conversation(self, agent1_name: str, agent2_name: str) -> str:
+        conversation_id = str(uuid.uuid4())
+        self.conversations[conversation_id] = {
+            "id": conversation_id,
+            "agent1": agent1_name,
+            "agent2": agent2_name,
+            "messages": [],
+            "created_at": datetime.now().isoformat(),
+            "consensus_reached": False,
+            "iteration_count": 0
+        }
+        return conversation_id
+    
+    def add_message(self, conversation_id: str, agent_name: str, content: str, metadata: Optional[Dict] = None):
+        if conversation_id not in self.conversations:
+            raise ValueError(f"Conversation {conversation_id} not found")
+        
+        message = {
+            "agent": agent_name,
+            "content": content,
+            "timestamp": datetime.now().isoformat(),
+            "metadata": metadata or {}
+        }
+        
+        self.conversations[conversation_id]["messages"].append(message)
+        self.conversations[conversation_id]["iteration_count"] += 1
+    
+    def get_conversation(self, conversation_id: str) -> List[Dict[str, Any]]:
+        if conversation_id not in self.conversations:
+            raise ValueError(f"Conversation {conversation_id} not found")
+        
+        return self.conversations[conversation_id]["messages"]
+    
+    # Keep old interface for backward compatibility
+    def __init__(self, max_iterations: int = 10):
+        self.max_iterations = max_iterations
+        self.conversations: Dict[str, Dict[str, Any]] = {}
+        # Legacy single conversation support
         self.conversation_history: List[Dict[str, Any]] = []
         self.consensus_reached = False
         self.iteration_count = 0
-    
-    def add_turn(
-        self, 
-        agent_name: str, 
-        message: str, 
-        analysis: Optional[Dict] = None,
-        metadata: Optional[Dict] = None
-    ):
-        """
-        Add a conversation turn.
-        
-        Args:
-            agent_name: Name of the agent speaking
-            message: The agent's message/statement
-            analysis: Structured analysis data (optional)
-            metadata: Additional metadata (optional)
-        """
+
+    def add_turn(self, agent_name: str, message: str, analysis: Optional[Dict] = None, metadata: Optional[Dict] = None):
+
         turn = {
             "iteration": self.iteration_count,
             "agent": agent_name,
@@ -60,14 +70,6 @@ class ConversationManager:
             self._check_consensus()
     
     def _check_consensus(self):
-        """
-        Detect if agents have reached consensus.
-        
-        Consensus indicators:
-        - Similar recommendations
-        - Agreement keywords
-        - Convergence in analysis
-        """
         if len(self.conversation_history) < 3:
             return False
         
@@ -94,12 +96,6 @@ class ConversationManager:
         return False
     
     def should_continue(self) -> bool:
-        """
-        Determine if conversation should continue.
-        
-        Returns:
-            False if max iterations reached or consensus reached
-        """
         if self.consensus_reached:
             return False
         
@@ -109,12 +105,6 @@ class ConversationManager:
         return True
     
     def generate_consensus_summary(self) -> Dict[str, Any]:
-        """
-        Generate a consensus summary from the conversation.
-        
-        Returns:
-            Structured consensus with key points from both agents
-        """
         if not self.conversation_history:
             return {
                 "status": "error",
@@ -163,7 +153,6 @@ class ConversationManager:
         return consensus
     
     def _extract_key_points(self, turns: List[Dict]) -> List[str]:
-        """Extract key points from agent turns."""
         key_points = []
         
         for turn in turns:
@@ -178,12 +167,7 @@ class ConversationManager:
         
         return key_points[:5]  # Limit to top 5 points
     
-    def _find_agreement_areas(
-        self, 
-        doc_turns: List[Dict], 
-        sherlock_turns: List[Dict]
-    ) -> List[str]:
-        """Identify areas where both agents agree."""
+    def _find_agreement_areas(self, doc_turns: List[Dict], sherlock_turns: List[Dict]):
         agreements = []
         
         # Simple keyword matching for demonstration
@@ -202,15 +186,9 @@ class ConversationManager:
         
         return agreements[:5]
     
-    def _find_debate_areas(
-        self, 
-        doc_turns: List[Dict], 
-        sherlock_turns: List[Dict]
-    ) -> List[str]:
-        """Identify areas where agents disagree or debate."""
+    def _find_debate_areas(self, doc_turns: List[Dict], sherlock_turns: List[Dict]):
         debates = []
         
-        # Look for disagreement keywords
         disagreement_keywords = [
             'however', 'but', 'disagree', 'alternatively', 
             'on the other hand', 'different perspective'
@@ -220,23 +198,17 @@ class ConversationManager:
             message_lower = turn['message'].lower()
             for keyword in disagreement_keywords:
                 if keyword in message_lower:
-                    # Extract context around the keyword
+
                     debates.append(f"{turn['agent']} raised alternative view")
                     break
         
         return debates[:3]
     
-    def _generate_unified_recommendation(
-        self, 
-        doc_turns: List[Dict], 
-        sherlock_turns: List[Dict]
-    ) -> str:
-        """Generate a unified recommendation from both perspectives."""
+    def _generate_unified_recommendation(self, doc_turns: List[Dict], sherlock_turns: List[Dict]):
         
         if not doc_turns or not sherlock_turns:
             return "Insufficient data for unified recommendation"
         
-        # Get final positions
         doc_final = doc_turns[-1]['message']
         sherlock_final = sherlock_turns[-1]['message']
         
@@ -263,8 +235,7 @@ Confidence Level: {self._calculate_confidence()}
         
         return recommendation.strip()
     
-    def _calculate_confidence(self) -> str:
-        """Calculate confidence level based on conversation quality."""
+    def _calculate_confidence(self):
         
         if self.consensus_reached and self.iteration_count >= 5:
             return "High"
@@ -273,12 +244,10 @@ Confidence Level: {self._calculate_confidence()}
         else:
             return "Low"
     
-    def get_conversation_history(self) -> List[Dict[str, Any]]:
-        """Get full conversation history."""
+    def get_conversation_history(self):
         return self.conversation_history
     
     def export_conversation(self, filepath: str):
-        """Export conversation to JSON file."""
         export_data = {
             "metadata": {
                 "max_iterations": self.max_iterations,
@@ -303,7 +272,6 @@ Confidence Level: {self._calculate_confidence()}
         )
 
 
-# Example usage
 if __name__ == "__main__":
     # Create conversation manager
     manager = ConversationManager(max_iterations=10)
