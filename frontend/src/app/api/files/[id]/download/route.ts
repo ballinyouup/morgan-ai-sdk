@@ -20,40 +20,19 @@ export async function GET(
             );
         }
 
-        if (!file.url) {
-            return NextResponse.json(
-                { error: "File URL not available" },
-                { status: 404 }
-            );
+        // For now, redirect to the S3 URL
+        // In production, you should generate a presigned URL here
+        // using AWS SDK with proper credentials
+        
+        // If the URL is already a presigned URL or public, redirect to it
+        if (file.url) {
+            return NextResponse.redirect(file.url);
         }
 
-        // Fetch the file from S3 and proxy it through our API
-        // This avoids CORS issues and access denied errors
-        const fileResponse = await fetch(file.url);
-
-        if (!fileResponse.ok) {
-            console.error(`Failed to fetch file from S3: ${fileResponse.status} ${fileResponse.statusText}`);
-            return NextResponse.json(
-                { error: "Failed to fetch file from storage" },
-                { status: 502 }
-            );
-        }
-
-        // Get the file content
-        const fileBlob = await fileResponse.blob();
-        const buffer = Buffer.from(await fileBlob.arrayBuffer());
-
-        // Determine content type
-        const contentType = fileResponse.headers.get('content-type') || 'application/octet-stream';
-
-        // Return the file with proper headers
-        return new NextResponse(buffer, {
-            headers: {
-                'Content-Type': contentType,
-                'Content-Disposition': `attachment; filename="${file.name}"`,
-                'Cache-Control': 'public, max-age=3600',
-            },
-        });
+        return NextResponse.json(
+            { error: "File URL not available" },
+            { status: 404 }
+        );
     } catch (error) {
         console.error("Error downloading file:", error);
         return NextResponse.json(

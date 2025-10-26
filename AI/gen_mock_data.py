@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 import random
 import json
 from typing import List, Dict
+from urllib.parse import unquote
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -45,56 +46,96 @@ PHONE_NUMBERS = [
 PRIORITIES = ["low", "medium", "high", "urgent"]
 STATUSES = ["open", "in_progress", "pending", "on-hold"]
 
-FILE_TYPES = [
-    {
-        "name": "Medical_Bill_ER_Visit.pdf",
-        "url": "https://simplylaw.s3.us-east-1.amazonaws.com/Medical_Bill_ER_Visit.pdf",
-        "type": "pdf",
-        "size": "2.3 MB"
-    },
-    {
-        "name": "Xray_Results_Lower_Back.pdf",
-        "url": "https://simplylaw.s3.us-east-1.amazonaws.com/Xray_Results_Lower_Back.pdf",
-        "type": "pdf",
-        "size": "1.8 MB"
-    },
-    {
-        "name": "Police_Report_Accident.pdf",
-        "url": "https://simplylaw.s3.us-east-1.amazonaws.com/POLICE+REPORT+(1).pdf",
-        "type": "pdf",
-        "size": "3.2 MB"
-    },
-    {
-        "name": "Insurance_Policy_Document.pdf",
-        "url": "https://simplylaw.s3.us-east-1.amazonaws.com/INSURANCE-+POLICY+PROGRESSIVE++.pdf",
-        "type": "pdf",
-        "size": "4.5 MB"
-    },
-    {
-        "name": "Witness_Statement_John_Doe.pdf",
-        "url": "https://simplylaw.s3.us-east-1.amazonaws.com/Witness_Statement.pdf",
-        "type": "pdf",
-        "size": "890 KB"
-    },
-    {
-        "name": "Property_Damage_Photos.zip",
-        "url": "https://simplylaw.s3.us-east-1.amazonaws.com/EST-PHOTOS-04-15-2019_Redacted.pdf",
-        "type": "pdf",
-        "size": "5.4 MB"
-    },
-    {
-        "name": "Medical_Records_Dr_Anderson.pdf",
-        "url": "https://simplylaw.s3.us-east-1.amazonaws.com/Medical_Records.pdf",
-        "type": "pdf",
-        "size": "1.5 MB"
-    },
-    {
-        "name": "Lost_Wages_Documentation.xlsx",
-        "url": "https://simplylaw.s3.us-east-1.amazonaws.com/Lost_Wages.xlsx",
-        "type": "document",
-        "size": "67 KB"
-    },
+def get_random_size():
+    size_kb = random.randint(50, 5000)
+    if size_kb > 1000:
+        return f"{size_kb / 1000:.1f} MB"
+    else:
+        return f"{size_kb} KB"
+
+def get_file_type(extension):
+    ext = extension.lower()
+    if ext in ['.pdf']:
+        return 'pdf'
+    if ext in ['.jpg', '.jpeg', '.png', '.gif']:
+        return 'image'
+    if ext in ['.m4a', '.mp3', '.wav']:
+        return 'audio'
+    if ext in ['.docx', '.xlsx', '.csv', '.txt']:
+        return 'document'
+    if ext in ['.zip']:
+        return 'zip'
+    return 'file'
+
+RAW_URLS = [
+    "https://simplylaw.s3.us-east-1.amazonaws.com/BI+CARRIER+requesting+info_Redacted.pdf",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/EST-TOTALLOSS--14593-84-04-15-2019-16-18-02_Redacted.pdf",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/Property+damage+estimate_Redacted.pdf",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/EST-PHOTOS-04-15-2019_Redacted.pdf",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/Ltr+from+AutoOwners+with+offer+of+%2418k_Redacted.pdf",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/File+4-+low+offer-+lawsuit.m4a",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/File+4-+call+about+demand.m4a",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/PIP+LOG+as+of+2_14_2020_Redacted.pdf",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/POLICE+REPORT+(1).pdf",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/Fie+4-+3rd+call.m4a",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/File+4+-+first+call.m4a",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/File+4-+2nd+call.m4a",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/File+4-4th+call.m4a",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/File+Notes.docx",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/Insurance+Basics.docx",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/LIEN+-+MEDICARE+(2)_Redacted.pdf",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/LIEN+-OPTUM+FINAL+LIEN+_Redacted.pdf",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/Police+Report.pdf",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/INSURANCE-+POLICY+PROGRESSIVE++.pdf",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/LIEN+-+MEDICARE+(1)_Redacted.pdf",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/LIEN+-+OPTUM+_Redacted.pdf",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/Progressive+Dec_Redacted.pdf",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/Geico+Dec+Page_Redacted.PDF",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/Geico+Policy_Redacted.pdf",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/LTR+-+OFFER+28k+asking+for+sx+recoreds.pdf",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/VM+from+Geico+.wav",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/LTR+-+CRN+TO+PROGRESSIVE+.pdf",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/LTR+-+OFFER-+24k+again.pdf",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/LTR+-+OFFER+28K++.pdf",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/ltr+-+offer+22%2C---.PDF",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/LTR+-+OFFER+24K.PDF",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/LTR+-+OFFER-25k.pdf",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/ltr+-+offer+.pdf",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/PD+-+EST-ESTIMATE--10394-07-08-03-2021-16-13-37_Redacted.pdf",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/PD+-+EST-PHOTOS1.pdf",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/PD+-+EST-PHOTOS.pdf",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/PD1.jpg",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/PD%40.jpg",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/Scene1.jpg",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/Scene2.jpg",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/File+3-+5+days+after+demand.m4a",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/File+3-+call+about+Tender.m4a",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/File+3-+call+about+demand.m4a",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/File+3-+call+about+offer.m4a",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/File+3-+call+about+CRN.m4a",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/File+3-+first+call.m4a",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/File+3+-+2nd+call.m4a",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/File+3+-+3rd+call.m4a",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/PIP+LOG+_Redacted.pdf",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/File+3-+4th+call.m4a",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/LTR+-+PIP+EXHAUST.PDF",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/CRASH+REPORT.pdf",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/PIP+payout_Redacted.pdf",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/PL+offer_Redacted.pdf",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/Property+damage+estimate+and+photos.pdf",
+    "https://simplylaw.s3.us-east-1.amazonaws.com/sms_records_anonymized.csv"
 ]
+
+FILE_TYPES = []
+for url in RAW_URLS:
+    filename = unquote(url.split('/')[-1])
+    _root, extension = os.path.splitext(filename)
+    FILE_TYPES.append({
+        "name": filename,
+        "url": url,
+        "type": get_file_type(extension),
+        "size": get_random_size()
+    })
 
 EMAIL_TEMPLATES = [
     {
@@ -108,7 +149,7 @@ I'm attaching the bills from my last visit - it was $450 for the consultation an
 Thanks for all your help,
 {client_name}""",
         "priority": "medium",
-        "files": ["Medical_Bill_ER_Visit.pdf", "Xray_Results_Lower_Back.pdf"]
+        "files": ["BI CARRIER requesting info_Redacted.pdf", "Property damage estimate_Redacted.pdf"]
     },
     {
         "subject": "Question about settlement offer",
@@ -165,7 +206,6 @@ NEXT_ACTIONS = [
 ]
 
 async def get_column_names(conn, table_name):
-    """Helper to get actual column names from database"""
     query = """
             SELECT column_name
             FROM information_schema.columns
@@ -176,13 +216,10 @@ async def get_column_names(conn, table_name):
     return [row['column_name'] for row in rows]
 
 async def create_case_with_data(conn, client_name: str, client_dob: str, case_type: str, case_number: str):
-    """Create a case with all related data matching the actual database schema"""
-
     status = random.choice(STATUSES)
     priority = random.choice(PRIORITIES)
     created_at = datetime.now() - timedelta(days=random.randint(30, 180))
 
-    # Use exact column names as they appear in the database
     case_id = await conn.fetchval(
         '''INSERT INTO "Case"
            (id, "caseType", "clientName", "clientDob", "caseNumber", status, priority,
@@ -202,7 +239,6 @@ async def create_case_with_data(conn, client_name: str, client_dob: str, case_ty
         datetime.now()
     )
 
-    # Create chats with messages
     num_chats = random.randint(1, 2)
     for i in range(num_chats):
         chat_template = random.choice(CHAT_TEMPLATES)
@@ -216,7 +252,6 @@ async def create_case_with_data(conn, client_name: str, client_dob: str, case_ty
                 msg["role"], msg["text"], chat_id
             )
 
-    # Create emails
     num_emails = random.randint(2, 4)
     for i in range(num_emails):
         template = random.choice(EMAIL_TEMPLATES)
@@ -236,7 +271,6 @@ async def create_case_with_data(conn, client_name: str, client_dob: str, case_ty
             datetime.now()
         )
 
-        # Add file attachments for emails
         for file_name in template.get("files", []):
             file_info = next((f for f in FILE_TYPES if f["name"] == file_name), None)
             if file_info:
@@ -253,7 +287,6 @@ async def create_case_with_data(conn, client_name: str, client_dob: str, case_ty
                     "Emily Rodriguez"
                 )
 
-    # Create text messages
     num_texts = random.randint(1, 3)
     for i in range(num_texts):
         text_template = random.choice(TEXT_MESSAGE_TEMPLATES)
@@ -271,7 +304,6 @@ async def create_case_with_data(conn, client_name: str, client_dob: str, case_ty
             datetime.now()
         )
 
-    # Create additional files
     num_extra_files = random.randint(3, 6)
     for i in range(num_extra_files):
         file_info = random.choice(FILE_TYPES)
@@ -289,7 +321,6 @@ async def create_case_with_data(conn, client_name: str, client_dob: str, case_ty
             "Emily Rodriguez"
         )
 
-    # Create reason chains
     reason_chains = [
         {
             "agentType": "document_classifier",
@@ -340,7 +371,6 @@ async def populate_database():
         conn = await asyncpg.connect(DATABASE_URL, statement_cache_size=0)
         print("✅ Connected")
 
-        # Debug: Print actual column names
         print("\n🔍 Checking database schema...")
         case_columns = await get_column_names(conn, "Case")
         print(f"   Case table columns: {', '.join(case_columns)}")
@@ -363,7 +393,6 @@ async def populate_database():
             case_id = await create_case_with_data(conn, client_name, client_dob, case_type, case_number)
             case_count += 1
 
-            # Update stats
             for key, table in [
                 ("chats", "Chat"),
                 ("emails", "Email"),
