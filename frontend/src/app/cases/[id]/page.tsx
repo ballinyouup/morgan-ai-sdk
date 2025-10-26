@@ -256,13 +256,13 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
+        <Button variant="default" size="icon" asChild>
           <Link href="/cases">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
         <div className="flex-1">
-          <h1 className="text-3xl font-bold tracking-tight">{case_.clientName}</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-black">{case_.clientName}</h1>
           <p className="text-muted-foreground">{case_.caseType}</p>
         </div>
         <Dialog open={callDialogOpen} onOpenChange={setCallDialogOpen}>
@@ -318,7 +318,7 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
             </div>
             <DialogFooter>
               <Button
-                variant="outline"
+
                 onClick={() => setCallDialogOpen(false)}
                 disabled={makingCall}
               >
@@ -336,7 +336,7 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
               defaultSubject={`Re: ${case_.caseType} - ${case_.clientName}`}
               onEmailSent={(updatedCase) => setCase(updatedCase)}
           />
-        <Button variant="outline">Edit Case</Button>
+        <Button>Edit Case</Button>
       </div>
 
       {/* Case Overview */}

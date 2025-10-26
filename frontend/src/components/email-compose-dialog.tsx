@@ -89,7 +89,7 @@ export function EmailComposeDialog({ caseId, defaultSubject, onEmailSent }: Emai
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="w-fit bg-transparent" variant="outline" onClick={openDialog}>
+        <Button className="w-fit" variant="default" onClick={openDialog}>
           <Mail className="h-4 w-4 mr-2" />
           Send Email
         </Button>

@@ -129,7 +129,7 @@ export default function ActionsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Agent Actions</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-black">Agent Actions</h1>
         <p className="text-muted-foreground">Review and approve AI-suggested actions for your cases</p>
       </div>
 

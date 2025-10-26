@@ -19,27 +19,10 @@ const userImageUrl = "/user.png"
 
 export function DashboardHeader() {
   return (
-    <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b  px-6">
+    <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b px-6 w-full">
       <div className="h-full w-full z-[-1] absolute right-0 backdrop-blur-sm bg-black/10"></div>
-      <div className="flex-1">
-        <form className="relative max-w-md">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-white" />
-          <Input type="search" placeholder="Search cases, clients, or documents..." className="pl-8 text-white" />
-        </form>
-      </div>
 
-      <div className="flex items-center gap-2 space-x-4">
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5 text-white" />
-          <Badge
-            variant="destructive"
-            className="absolute -right-1 -top-1 h-5 w-5 rounded-full p-0 text-xs flex items-center justify-center"
-          >
-            3
-          </Badge>
-          <span className="sr-only">Notifications</span>
-        </Button>
-
+      <div className="w-full flex items-center justify-end gap-2 space-x-4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon">

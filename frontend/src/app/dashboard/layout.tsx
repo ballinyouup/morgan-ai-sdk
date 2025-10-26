@@ -77,7 +77,7 @@ export default function ChatLayout({
             <img src={logo} className="w-8 h-8 invert" alt="Simply Law Logo"/>
 
             <div className="flex h-16 items-center">
-              <h2 className="text-lg font-semibold text-white">Simply Law</h2>
+              <h2 className="text-lg font-semibold text-white"><a href={"/"}>Simply Law</a></h2>
             </div>
           </div>
 
