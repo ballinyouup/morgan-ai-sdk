@@ -1,0 +1,95 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Case {
+  id     String @id @default(cuid())
+  caseType String
+  clientName String
+  clientDob String
+  caseNumber String @unique
+  createdAt DateTime @default(now())
+  lastActivity DateTime @default(now())
+  status String @default("open")
+  priority String @default("high")
+  assignedTo String
+  description String
+  nextAction String
+
+  emails Email[]
+  files Files[]
+  chats  Chat[]
+  textMessages TextMessage[]
+  reasonChains ReasonChain[]
+}
+
+model Chat {
+  id String @id @default(cuid())
+  caseId String
+  case   Case   @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  messages Message[]
+}
+
+model Message {
+  id     String @id @default(cuid())
+  role   String
+  text   String
+  chatId String
+  chat   Chat   @relation(fields: [chatId], references: [id], onDelete: Cascade)
+}
+
+model Email {
+  id     String @id @default(cuid())
+  caseId String
+  case   Case   @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  from String
+  to String
+  subject String
+  content String
+}
+
+model Files {
+  id     String @id @default(cuid())
+  caseId String
+  case   Case   @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  uploadedAt DateTime @default(now())
+  uploadedBy String
+  name String
+  url String
+  type String
+  size String
+}
+
+model TextMessage {
+  id     String @id @default(cuid())
+  caseId String
+  case   Case   @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  text String
+  from String
+  to String
+}
+
+// Transparent Reason Chain for explainability
+model ReasonChain {
+  id          String   @id @default(cuid())
+  caseId      String
+  case        Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  agentType   String   // records_wrangler, client_communication, etc.
+  action      String
+  reasoning   String   @db.Text
+  status      String   @default("pending") // pending, approved, rejected
+  impact      String   @default("medium") // low, medium, high
+  data        Json?    // Additional data as JSON
+  confidence  Float?
+  timestamp   DateTime @default(now())
+}
