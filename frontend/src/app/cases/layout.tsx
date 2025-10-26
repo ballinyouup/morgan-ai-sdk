@@ -70,15 +70,19 @@ export default function ChatLayout({
     
       <div className="flex h-full">
         <div className="h-full w-full z-[-1] absolute right-0 backdrop-blur-sm bg-black/10"></div>
-        <div className="h-full w-full z-[-1]  absolute right-0 top-[63.5px] bg-white"></div>
+        <div className="h-full w-full z-[-1]  absolute right-0 top-[71px] bg-white"></div>
         <aside className="w-64 border-r">
           <div className="flex flex-row justify-center items-center space-x-3">
             <img src={logo} className="w-8 h-8 invert" alt="Simply Law Logo"/>
 
             <div className="flex h-16 items-center">
-              <h2 className="text-lg font-semibold text-white">Simply Law</h2>
-            </div>
+                <h2 className="text-lg font-semibold text-white">
+                    <link href="/">
+                    Simply Law
+                </link>
+            </h2>
           </div>
+      </div>
 
           <DashboardNav />
         </aside>
