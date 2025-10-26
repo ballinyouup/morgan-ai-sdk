@@ -6,7 +6,7 @@ import { LayoutDashboard, FolderOpen, CheckSquare, MessageSquare, Settings } fro
 import { cn } from "@/lib/utils"
 
 const navItems = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/cases", label: "Cases", icon: FolderOpen },
   { href: "/actions", label: "Agent Actions", icon: CheckSquare },
   { href: "/communications", label: "Communications", icon: MessageSquare },
@@ -20,7 +20,11 @@ export function DashboardNav() {
     <nav className="flex flex-col gap-1 p-4">
       {navItems.map((item) => {
         const Icon = item.icon
-        const isActive = pathname === item.href
+        // Mark active when the current pathname equals the item href or is a child route
+        // e.g. pathname '/cases/123' should keep '/cases' active.
+        const isActive = Boolean(
+          pathname === item.href || (pathname && pathname.startsWith(item.href + "/"))
+        )
 
         return (
           <Link

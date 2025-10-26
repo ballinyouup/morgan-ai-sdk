@@ -40,8 +40,7 @@ import {
   FileImage,
   Loader2,
 } from "lucide-react"
-import { notFound } from "next/navigation"
-import { use, useEffect, useState } from "react"
+import React, { useEffect, useState } from "react"
 import { EmailComposeDialog } from "@/components/email-compose-dialog"
 
 interface CaseData {
@@ -102,7 +101,9 @@ interface CaseData {
 }
 
 export default function CaseDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params)
+  // `params` is provided as a Promise in client components. Per Next.js
+  // dynamic API rules we must unwrap it with React.use()
+  const { id } = React.use(params)
   const [case_, setCase] = useState<CaseData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -123,7 +124,12 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
       
       if (!response.ok) {
         if (response.status === 404) {
-          notFound()
+          // In a client component we cannot call the server-only notFound();
+          // show a friendly error instead and stop loading.
+          setError('Case not found')
+          setCase(null)
+          setLoading(false)
+          return
         }
         throw new Error('Failed to fetch case')
       }
