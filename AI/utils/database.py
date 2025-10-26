@@ -12,35 +12,23 @@ class DatabaseTool:
     async def connect(self):
         if not self._connected:
             await self.db.connect()
-            self._connected = True
+            self._connected = False
     
     async def disconnect(self):
-        """Close database connection"""
         if self._connected:
             await self.db.disconnect()
             self._connected = False
     
     async def __aenter__(self):
-        """Context manager entry"""
         await self.connect()
         return self
     
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        """Context manager exit"""
         await self.disconnect()
     
     # ==================== CASE OPERATIONS ====================
     
     async def create_case(self, status: str = "open") -> Dict[str, Any]:
-        """
-        Create a new case.
-        
-        Args:
-            status: Case status (default: "open")
-        
-        Returns:
-            Dictionary containing the created case data
-        """
         await self.connect()
         case = await self.db.case.create(
             data={"status": status}
@@ -48,16 +36,6 @@ class DatabaseTool:
         return case.model_dump()
     
     async def get_case(self, case_id: str, include_relations: bool = False) -> Optional[Dict[str, Any]]:
-        """
-        Retrieve a case by ID.
-        
-        Args:
-            case_id: The case ID
-            include_relations: Whether to include related chats, emails, files, etc.
-        
-        Returns:
-            Dictionary containing case data or None if not found
-        """
         await self.connect()
         
         include_dict = None
@@ -77,16 +55,6 @@ class DatabaseTool:
         return case.model_dump() if case else None
     
     async def update_case(self, case_id: str, status: Optional[str] = None) -> Optional[Dict[str, Any]]:
-        """
-        Update a case.
-        
-        Args:
-            case_id: The case ID
-            status: New status for the case
-        
-        Returns:
-            Dictionary containing updated case data or None if not found
-        """
         await self.connect()
         
         update_data = {}
@@ -100,15 +68,6 @@ class DatabaseTool:
         return case.model_dump() if case else None
     
     async def delete_case(self, case_id: str) -> bool:
-        """
-        Delete a case (cascades to related records).
-        
-        Args:
-            case_id: The case ID
-        
-        Returns:
-            True if deleted, False if not found
-        """
         await self.connect()
         try:
             await self.db.case.delete(where={"id": case_id})
@@ -122,17 +81,6 @@ class DatabaseTool:
         skip: int = 0,
         limit: int = 100
     ) -> List[Dict[str, Any]]:
-        """
-        List cases with optional filtering.
-        
-        Args:
-            status: Filter by status (optional)
-            skip: Number of records to skip (pagination)
-            limit: Maximum number of records to return
-        
-        Returns:
-            List of case dictionaries
-        """
         await self.connect()
         
         where_dict = {}
@@ -150,15 +98,6 @@ class DatabaseTool:
     # ==================== CHAT OPERATIONS ====================
     
     async def create_chat(self, case_id: str) -> Dict[str, Any]:
-        """
-        Create a new chat for a case.
-        
-        Args:
-            case_id: The case ID
-        
-        Returns:
-            Dictionary containing the created chat data
-        """
         await self.connect()
         chat = await self.db.chat.create(
             data={"caseId": case_id}
@@ -166,16 +105,6 @@ class DatabaseTool:
         return chat.model_dump()
     
     async def get_chat(self, chat_id: str, include_messages: bool = True) -> Optional[Dict[str, Any]]:
-        """
-        Retrieve a chat by ID.
-        
-        Args:
-            chat_id: The chat ID
-            include_messages: Whether to include messages
-        
-        Returns:
-            Dictionary containing chat data or None if not found
-        """
         await self.connect()
         chat = await self.db.chat.find_unique(
             where={"id": chat_id},
@@ -184,15 +113,6 @@ class DatabaseTool:
         return chat.model_dump() if chat else None
     
     async def list_chats_for_case(self, case_id: str) -> List[Dict[str, Any]]:
-        """
-        List all chats for a specific case.
-        
-        Args:
-            case_id: The case ID
-        
-        Returns:
-            List of chat dictionaries
-        """
         await self.connect()
         chats = await self.db.chat.find_many(
             where={"caseId": case_id},
@@ -201,15 +121,6 @@ class DatabaseTool:
         return [chat.model_dump() for chat in chats]
     
     async def delete_chat(self, chat_id: str) -> bool:
-        """
-        Delete a chat (cascades to messages).
-        
-        Args:
-            chat_id: The chat ID
-        
-        Returns:
-            True if deleted, False if not found
-        """
         await self.connect()
         try:
             await self.db.chat.delete(where={"id": chat_id})
@@ -225,17 +136,6 @@ class DatabaseTool:
         role: str, 
         text: str
     ) -> Dict[str, Any]:
-        """
-        Create a new message in a chat.
-        
-        Args:
-            chat_id: The chat ID
-            role: Message role (e.g., "user", "assistant", "system")
-            text: Message content
-        
-        Returns:
-            Dictionary containing the created message data
-        """
         await self.connect()
         message = await self.db.message.create(
             data={
@@ -247,15 +147,6 @@ class DatabaseTool:
         return message.model_dump()
     
     async def get_message(self, message_id: str) -> Optional[Dict[str, Any]]:
-        """
-        Retrieve a message by ID.
-        
-        Args:
-            message_id: The message ID
-        
-        Returns:
-            Dictionary containing message data or None if not found
-        """
         await self.connect()
         message = await self.db.message.find_unique(
             where={"id": message_id}
@@ -263,15 +154,6 @@ class DatabaseTool:
         return message.model_dump() if message else None
     
     async def list_messages_for_chat(self, chat_id: str) -> List[Dict[str, Any]]:
-        """
-        List all messages for a specific chat.
-        
-        Args:
-            chat_id: The chat ID
-        
-        Returns:
-            List of message dictionaries ordered by creation time
-        """
         await self.connect()
         messages = await self.db.message.find_many(
             where={"chatId": chat_id},
@@ -280,15 +162,6 @@ class DatabaseTool:
         return [message.model_dump() for message in messages]
     
     async def delete_message(self, message_id: str) -> bool:
-        """
-        Delete a message.
-        
-        Args:
-            message_id: The message ID
-        
-        Returns:
-            True if deleted, False if not found
-        """
         await self.connect()
         try:
             await self.db.message.delete(where={"id": message_id})
@@ -304,17 +177,6 @@ class DatabaseTool:
         subject: str, 
         body: str
     ) -> Dict[str, Any]:
-        """
-        Create a new email record for a case.
-        
-        Args:
-            case_id: The case ID
-            subject: Email subject
-            body: Email body content
-        
-        Returns:
-            Dictionary containing the created email data
-        """
         await self.connect()
         email = await self.db.email.create(
             data={
@@ -326,15 +188,6 @@ class DatabaseTool:
         return email.model_dump()
     
     async def get_email(self, email_id: str) -> Optional[Dict[str, Any]]:
-        """
-        Retrieve an email by ID.
-        
-        Args:
-            email_id: The email ID
-        
-        Returns:
-            Dictionary containing email data or None if not found
-        """
         await self.connect()
         email = await self.db.email.find_unique(
             where={"id": email_id}
@@ -342,15 +195,6 @@ class DatabaseTool:
         return email.model_dump() if email else None
     
     async def list_emails_for_case(self, case_id: str) -> List[Dict[str, Any]]:
-        """
-        List all emails for a specific case.
-        
-        Args:
-            case_id: The case ID
-        
-        Returns:
-            List of email dictionaries
-        """
         await self.connect()
         emails = await self.db.email.find_many(
             where={"caseId": case_id},
@@ -364,17 +208,6 @@ class DatabaseTool:
         subject: Optional[str] = None, 
         body: Optional[str] = None
     ) -> Optional[Dict[str, Any]]:
-        """
-        Update an email.
-        
-        Args:
-            email_id: The email ID
-            subject: New subject (optional)
-            body: New body (optional)
-        
-        Returns:
-            Dictionary containing updated email data or None if not found
-        """
         await self.connect()
         
         update_data = {}
@@ -393,15 +226,6 @@ class DatabaseTool:
         return email.model_dump() if email else None
     
     async def delete_email(self, email_id: str) -> bool:
-        """
-        Delete an email.
-        
-        Args:
-            email_id: The email ID
-        
-        Returns:
-            True if deleted, False if not found
-        """
         await self.connect()
         try:
             await self.db.email.delete(where={"id": email_id})
@@ -417,17 +241,6 @@ class DatabaseTool:
         name: str, 
         path: str
     ) -> Dict[str, Any]:
-        """
-        Create a new file record for a case.
-        
-        Args:
-            case_id: The case ID
-            name: File name
-            path: File path/URL
-        
-        Returns:
-            Dictionary containing the created file data
-        """
         await self.connect()
         file = await self.db.files.create(
             data={
@@ -439,15 +252,6 @@ class DatabaseTool:
         return file.model_dump()
     
     async def get_file(self, file_id: str) -> Optional[Dict[str, Any]]:
-        """
-        Retrieve a file by ID.
-        
-        Args:
-            file_id: The file ID
-        
-        Returns:
-            Dictionary containing file data or None if not found
-        """
         await self.connect()
         file = await self.db.files.find_unique(
             where={"id": file_id}
@@ -455,15 +259,6 @@ class DatabaseTool:
         return file.model_dump() if file else None
     
     async def list_files_for_case(self, case_id: str) -> List[Dict[str, Any]]:
-        """
-        List all files for a specific case.
-        
-        Args:
-            case_id: The case ID
-        
-        Returns:
-            List of file dictionaries
-        """
         await self.connect()
         files = await self.db.files.find_many(
             where={"caseId": case_id},
@@ -477,17 +272,6 @@ class DatabaseTool:
         name: Optional[str] = None, 
         path: Optional[str] = None
     ) -> Optional[Dict[str, Any]]:
-        """
-        Update a file record.
-        
-        Args:
-            file_id: The file ID
-            name: New name (optional)
-            path: New path (optional)
-        
-        Returns:
-            Dictionary containing updated file data or None if not found
-        """
         await self.connect()
         
         update_data = {}
@@ -506,15 +290,6 @@ class DatabaseTool:
         return file.model_dump() if file else None
     
     async def delete_file(self, file_id: str) -> bool:
-        """
-        Delete a file record.
-        
-        Args:
-            file_id: The file ID
-        
-        Returns:
-            True if deleted, False if not found
-        """
         await self.connect()
         try:
             await self.db.files.delete(where={"id": file_id})
@@ -531,18 +306,6 @@ class DatabaseTool:
         from_number: str, 
         to_number: str
     ) -> Dict[str, Any]:
-        """
-        Create a new text message record for a case.
-        
-        Args:
-            case_id: The case ID
-            text: Message text content
-            from_number: Sender's phone number
-            to_number: Recipient's phone number
-        
-        Returns:
-            Dictionary containing the created text message data
-        """
         await self.connect()
         text_message = await self.db.textmessage.create(
             data={
@@ -555,15 +318,6 @@ class DatabaseTool:
         return text_message.model_dump()
     
     async def get_text_message(self, message_id: str) -> Optional[Dict[str, Any]]:
-        """
-        Retrieve a text message by ID.
-        
-        Args:
-            message_id: The text message ID
-        
-        Returns:
-            Dictionary containing text message data or None if not found
-        """
         await self.connect()
         text_message = await self.db.textmessage.find_unique(
             where={"id": message_id}
@@ -571,15 +325,6 @@ class DatabaseTool:
         return text_message.model_dump() if text_message else None
     
     async def list_text_messages_for_case(self, case_id: str) -> List[Dict[str, Any]]:
-        """
-        List all text messages for a specific case.
-        
-        Args:
-            case_id: The case ID
-        
-        Returns:
-            List of text message dictionaries
-        """
         await self.connect()
         text_messages = await self.db.textmessage.find_many(
             where={"caseId": case_id},
@@ -588,15 +333,6 @@ class DatabaseTool:
         return [msg.model_dump() for msg in text_messages]
     
     async def delete_text_message(self, message_id: str) -> bool:
-        """
-        Delete a text message.
-        
-        Args:
-            message_id: The text message ID
-        
-        Returns:
-            True if deleted, False if not found
-        """
         await self.connect()
         try:
             await self.db.textmessage.delete(where={"id": message_id})
@@ -615,20 +351,6 @@ class DatabaseTool:
         data: Optional[Dict[str, Any]] = None,
         confidence: Optional[float] = None
     ) -> Dict[str, Any]:
-        """
-        Create a new reason chain entry for transparency and explainability.
-        
-        Args:
-            case_id: The case ID
-            agent_type: Type of agent (e.g., "client_communication", "records_wrangler")
-            action: Action taken by the agent
-            reasoning: Explanation of why the action was taken
-            data: Additional data as JSON (optional)
-            confidence: Confidence score 0-1 (optional)
-        
-        Returns:
-            Dictionary containing the created reason chain data
-        """
         await self.connect()
         
         create_data = {
@@ -647,15 +369,6 @@ class DatabaseTool:
         return reason_chain.model_dump()
     
     async def get_reason_chain(self, reason_id: str) -> Optional[Dict[str, Any]]:
-        """
-        Retrieve a reason chain entry by ID.
-        
-        Args:
-            reason_id: The reason chain ID
-        
-        Returns:
-            Dictionary containing reason chain data or None if not found
-        """
         await self.connect()
         reason_chain = await self.db.reasonchain.find_unique(
             where={"id": reason_id}
@@ -667,16 +380,6 @@ class DatabaseTool:
         case_id: str,
         agent_type: Optional[str] = None
     ) -> List[Dict[str, Any]]:
-        """
-        List all reason chain entries for a specific case.
-        
-        Args:
-            case_id: The case ID
-            agent_type: Filter by agent type (optional)
-        
-        Returns:
-            List of reason chain dictionaries
-        """
         await self.connect()
         
         where_dict = {"caseId": case_id}
@@ -690,15 +393,6 @@ class DatabaseTool:
         return [rc.model_dump() for rc in reason_chains]
     
     async def delete_reason_chain(self, reason_id: str) -> bool:
-        """
-        Delete a reason chain entry.
-        
-        Args:
-            reason_id: The reason chain ID
-        
-        Returns:
-            True if deleted, False if not found
-        """
         await self.connect()
         try:
             await self.db.reasonchain.delete(where={"id": reason_id})
@@ -709,15 +403,6 @@ class DatabaseTool:
     # ==================== HELPER/UTILITY METHODS ====================
     
     async def get_case_summary(self, case_id: str) -> Optional[Dict[str, Any]]:
-        """
-        Get a comprehensive summary of a case with all related data.
-        
-        Args:
-            case_id: The case ID
-        
-        Returns:
-            Dictionary containing case summary with counts and recent activity
-        """
         await self.connect()
         
         case = await self.get_case(case_id, include_relations=True)
@@ -753,17 +438,6 @@ class DatabaseTool:
         end_date: datetime,
         status: Optional[str] = None
     ) -> List[Dict[str, Any]]:
-        """
-        Search for cases within a date range.
-        
-        Args:
-            start_date: Start date for the range
-            end_date: End date for the range
-            status: Filter by status (optional)
-        
-        Returns:
-            List of case dictionaries
-        """
         await self.connect()
         
         where_dict = {
@@ -789,8 +463,6 @@ async def get_database_tool() -> DatabaseTool:
 
 if __name__ == "__main__":
     async def demo():
-        """Demonstration of database tool usage"""
-        
         # Using context manager (automatically connects/disconnects)
         async with DatabaseTool() as db:
             # Create a new case

@@ -17,7 +17,6 @@ class ClientCommunicationAgent:
         self.api_key = os.getenv("GOOGLE_API_KEY")
         if not self.api_key:
             raise ValueError("GOOGLE_API_KEY not set")
-    
 
         self.agent = Agent(
             name="client_communication_agent",
@@ -104,8 +103,11 @@ Always remember: You draft - humans approve. Client satisfaction is paramount.
 """
     
     def analyze_emotion(self, message: str):
-        pipe = pipeline("text-classification", model="tabularisai/multilingual-sentiment-analysis",device=self.device)
-        result = pipe(message)[0]
+        pipe = pipeline("text-classification", model="tabularisai/multilingual-sentiment-analysis", device=self.device, truncation=True, max_length=512)
+            # Truncate message to avoid exceeding model's max sequence length
+            # Using 400 tokens worth of chars (~1600 chars) to be safe
+        truncated_message = message[:1600] if len(message) > 1600 else message
+        result = pipe(truncated_message)[0]
     
         return {
             "primary_emotion": result['label'],
@@ -113,8 +115,6 @@ Always remember: You draft - humans approve. Client satisfaction is paramount.
         }
     
     def draft_response(self, client_message: str, context: str = "", case_update: str = ""):
-        print(f"\n=== Drafting Client Response ===")
-        
         emotion_analysis = self.analyze_emotion(client_message)
         
         response_elements = []
@@ -129,13 +129,11 @@ Always remember: You draft - humans approve. Client satisfaction is paramount.
             "case_update": case_update,
         }
         
-        return draft
     
     def draft_email(self, subject: str, recipient_name: str, message_body: str, case_info: str = "", tone: str = "professional"):
         print(f"\n=== Drafting Email ===")
-        
         emotion_analysis = self.analyze_emotion(message_body)
-        
+            
         email_draft = {
             "channel": "email",
             "subject": subject,
@@ -175,11 +173,13 @@ Always remember: You draft - humans approve. Client satisfaction is paramount.
         
         return text_draft
     
-    def draft_portal_message(self, recipient_name: str, subject: str, message: str,attachments: list = None, category: str = "general"):
+    def draft_portal_message(self, recipient_name: str, subject: str, message: str, category: str = "general", attachments: str = ""):
         print(f"\n=== Drafting Portal Message ===")
         
         emotion_analysis = self.analyze_emotion(message)
         urgency = self.detect_urgency_level(message)
+        
+        attachment_list = [a.strip() for a in attachments.split(',') if a.strip()] if attachments else []
         
         portal_draft = {
             "channel": "client_portal",
@@ -187,7 +187,7 @@ Always remember: You draft - humans approve. Client satisfaction is paramount.
             "subject": subject,
             "message": message,
             "category": category,
-            "attachments": attachments or [],
+            "attachments": attachment_list,
             "emotion_context": emotion_analysis,
             "urgency_level": urgency,
             "notification_settings": {
@@ -197,57 +197,126 @@ Always remember: You draft - humans approve. Client satisfaction is paramount.
             "requires_review": True,
             "allow_client_reply": True
         }
-        
+            
         return portal_draft
+       
     
-    def analyze_call_transcript(self, transcript: str, call_duration: int = 0, participant_names: list = None):
+    def analyze_call_transcript(self, transcript: str, call_duration: int = 0, participant_names: str = ""):
         print(f"\n=== Analyzing Call Transcript ===")
         
-        emotion_analysis = self.analyze_emotion(transcript)
-        action_items = self.extract_action_items(transcript)
-        urgency = self.detect_urgency_level(transcript)
-        
-        questions = [line for line in transcript.split('\n') if '?' in line]
-        
-        analysis = {
-            "channel": "phone_call",
-            "call_duration_minutes": call_duration,
-            "participants": participant_names or [],
-            "emotion_analysis": emotion_analysis,
-            "key_topics": self._extract_keywords(transcript),
-            "questions_asked": questions,
-            "action_items": action_items,
-            "urgency_level": urgency,
-            "follow_up_required": len(action_items) > 0 or urgency in ["high", "urgent"],
-            "summary_length": len(transcript.split()),
-            "requires_attorney_review": urgency == "urgent" or len(questions) > 3,
-            "suggested_next_steps": []
-        }
-        
-        return analysis
+        try:
+            emotion_analysis = self.analyze_emotion(transcript)
+            action_items = self.extract_action_items(transcript)
+            urgency = self.detect_urgency_level(transcript)
+            
+            questions = [line for line in transcript.split('\n') if '?' in line]
+            
+            participants_list = [p.strip() for p in participant_names.split(',') if p.strip()] if participant_names else []
+            
+            analysis = {
+                "channel": "phone_call",
+                "call_duration_minutes": call_duration,
+                "participants": participants_list,
+                "emotion_analysis": emotion_analysis,
+                "key_topics": self._extract_keywords(transcript),
+                "questions_asked": questions,
+                "action_items": action_items,
+                "urgency_level": urgency,
+                "follow_up_required": len(action_items) > 0 or urgency in ["high", "urgent"],
+                "summary_length": len(transcript.split()),
+                "requires_attorney_review": urgency == "urgent" or len(questions) > 3,
+                "suggested_next_steps": []
+            }
+            
+            return analysis
+        except Exception as e:
+            print(f"❌ Error analyzing call transcript: {e}")
+            participants_list = [p.strip() for p in participant_names.split(',') if p.strip()] if participant_names else []
+            return {
+                "channel": "phone_call",
+                "call_duration_minutes": call_duration,
+                "participants": participants_list,
+                "emotion_analysis": {"primary_emotion": "Neutral", "confidence": 0.5},
+                "key_topics": [],
+                "questions_asked": [],
+                "action_items": [],
+                "urgency_level": "normal",
+                "follow_up_required": False,
+                "summary_length": 0,
+                "requires_attorney_review": False,
+                "suggested_next_steps": [],
+                "error": str(e)
+            }
     
+    def detect_urgency_level(self, message: str):
+        urgent_keywords = ['urgent', 'emergency', 'asap', 'immediately', 'critical', 'now']
+        high_keywords = ['soon', 'quickly', 'important', 'concerned', 'worried']
+        
+        message_lower = message.lower()
+        
+        if any(keyword in message_lower for keyword in urgent_keywords):
+            return "urgent"
+        elif any(keyword in message_lower for keyword in high_keywords):
+            return "high"
+        else:
+            return "normal"
+    
+    def extract_action_items(self, text: str):
+        action_keywords = ['need to', 'should', 'must', 'will', 'going to', 'plan to']
+        action_items = []
+        
+        for line in text.split('\n'):
+            if any(keyword in line.lower() for keyword in action_keywords):
+                action_items.append(line.strip())
+        
+        return action_items
+    
+    def _extract_keywords(self, text: str):
+        common_words = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'is', 'was', 'are', 'be'}
+        words = text.lower().split()
+        keywords = [word for word in words if len(word) > 3 and word not in common_words]
+        # Return top 10 most frequent
+        from collections import Counter
+        return [word for word, count in Counter(keywords).most_common(10)]
+    
+    def _get_email_closing(self, tone: str):
+        closings = {
+            "professional": "Best regards",
+            "warm": "Warm regards",
+            "friendly": "Best",
+            "formal": "Sincerely"
+        }
+        return closings.get(tone, "Best regards")
 
     async def process_communication(self, input_data):
         print(f"\n{'='*60}")
         print("Client Communication Agent Initialized")
         print(f"{'='*60}\n")
 
-        APP_NAME = "SimplyLaw"
+        try:
+            APP_NAME = "SimplyLaw"
 
-        #prob replace these later with unique ids
-        USER_ID = input_data['ID']['userid']
-        SESSION_ID = input_data['ID']['sessionid']
+            #prob replace these later with unique ids
+            USER_ID = input_data['ID']['userid']
+            SESSION_ID = input_data['ID']['sessionid']
 
-        session_service = InMemorySessionService()
-        await session_service.create_session(app_name=APP_NAME, user_id=USER_ID, session_id=SESSION_ID)
+            session_service = InMemorySessionService()
+            await session_service.create_session(app_name=APP_NAME, user_id=USER_ID, session_id=SESSION_ID)
 
-        runner = Runner(agent=self.agent, app_name=APP_NAME, session_service=session_service)
-        content = types.Content(role='user', parts=[types.Part(text=input_data['message'])])
-        events = runner.run(user_id=USER_ID, session_id=SESSION_ID, new_message=content)
+            runner = Runner(agent=self.agent, app_name=APP_NAME, session_service=session_service)
+            content = types.Content(role='user', parts=[types.Part(text=input_data['message'])])
+            events = runner.run(user_id=USER_ID, session_id=SESSION_ID, new_message=content)
 
-        for event in events:
-            if event.is_final_response():
-                return event.content.parts[0].text
+            for event in events:
+                if event.is_final_response():
+                    return event.content.parts[0].text
+            
+            # If no final response was found
+            return "Communication processed but no response generated."
+            
+        except Exception as e:
+            print(f"❌ Error processing communication: {e}")
+            return f"Error processing communication: {str(e)}"
  
 if __name__ == "__main__":
     agent = ClientCommunicationAgent()
