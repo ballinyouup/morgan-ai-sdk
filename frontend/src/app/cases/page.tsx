@@ -188,7 +188,7 @@ function CasesList({ cases }: { cases: Case[] }) {
   return (
     <div className="grid gap-4">
       {cases.map((case_) => (
-        <Card key={case_.id} className="hover:bg-accent/50 transition-colors">
+        <Card key={case_.id} className="transition-colors">
           <CardHeader>
             <div className="flex items-start justify-between">
               <div className="space-y-1 flex-1">
