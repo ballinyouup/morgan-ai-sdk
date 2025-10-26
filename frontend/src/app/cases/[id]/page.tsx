@@ -1,5 +1,6 @@
 "use client"
 
+import * as React from "react"
 import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -23,8 +24,10 @@ import {
 } from "lucide-react"
 import { notFound } from "next/navigation"
 
-export default function CaseDetailPage({ params }: { params: { id: string }}) {
-  const { id } = params
+export default function CaseDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  // `params` can be a promise in the app router. Unwrap it with React.use() in a client
+  // component before accessing properties.
+  const { id } = React.use(params)
 
   const case_ = mockCases.find((c) => c.id === id)
 
