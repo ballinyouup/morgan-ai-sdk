@@ -78,9 +78,9 @@ export default function ChatLayout({
 
             <div className="flex h-16 items-center">
                 <h2 className="text-lg font-semibold text-white">
-                    <link href="/">
+                    <Link href="/">
                     Simply Law
-                </link>
+                </Link>
             </h2>
           </div>
       </div>

@@ -7,6 +7,7 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { Environment, useTexture } from "@react-three/drei";
 import { DashboardNav } from "@/components/dashboard-nav";
 import { DashboardHeader } from "@/components/dashboard-header";
+import Link from "next/link"
 
 const logo = "/logo.png"
 
@@ -77,9 +78,9 @@ export default function ChatLayout({
 
             <div className="flex h-16 items-center">
                 <h2 className="text-lg font-semibold text-white">
-                    <link href="/">
+                    <Link href="/">
                     Simply Law
-                </link>
+                </Link>
             </h2>
           </div>
       </div>
