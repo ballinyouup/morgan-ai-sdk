@@ -46,7 +46,7 @@ export default function CasesPage() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <Clock className="h-12 w-12 text-muted-foreground mb-4 mx-auto animate-spin" />
-          <p className="text-lg font-medium">Loading cases...</p>
+          <p className="text-lg font-medium text-black">Loading cases...</p>
         </div>
       </div>
     )

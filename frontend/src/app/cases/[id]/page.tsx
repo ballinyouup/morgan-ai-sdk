@@ -39,9 +39,12 @@ import {
   FileAudio,
   FileImage,
   Loader2,
+  Sparkles,
 } from "lucide-react"
 import React, { useEffect, useState } from "react"
 import { EmailComposeDialog } from "@/components/email-compose-dialog"
+import { AIAnalysisDialog } from "@/components/ai-analysis-dialog"
+import { WorkflowAutomationCard } from "@/components/workflow-automation-card"
 
 interface CaseData {
   id: string
@@ -143,6 +146,13 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
     }
   }
 
+  // Refresh case data when AI analysis completes
+  const handleAnalysisComplete = () => {
+    fetchCase()
+    // Force refresh of workflow card by re-rendering
+    window.location.reload()
+  }
+
   async function handleStatusChange(newStatus: string) {
     try {
       const response = await fetch(`/api/cases/${id}`, {
@@ -214,7 +224,7 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <Clock className="h-12 w-12 text-muted-foreground mb-4 mx-auto animate-spin" />
-          <p className="text-lg font-medium">Loading case details...</p>
+          <p className="text-lg font-medium text-black">Loading case details...</p>
         </div>
       </div>
     )
@@ -265,6 +275,11 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
           <h1 className="text-3xl font-bold tracking-tight text-black">{case_.clientName}</h1>
           <p className="text-muted-foreground">{case_.caseType}</p>
         </div>
+        <AIAnalysisDialog
+          caseId={id}
+          files={case_.files}
+          onAnalysisComplete={handleAnalysisComplete}
+        />
         <Dialog open={callDialogOpen} onOpenChange={setCallDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={openCallDialog}>
@@ -338,6 +353,9 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
           />
         <Button>Edit Case</Button>
       </div>
+
+      {/* Workflow Automation */}
+      <WorkflowAutomationCard caseId={id} />
 
       {/* Case Overview */}
       <div className="grid gap-6 md:grid-cols-3">
@@ -449,6 +467,9 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
           <TabsTrigger value="communications">
             Communications <Badge className="ml-2">{caseCommunications.length}</Badge>
           </TabsTrigger>
+          <TabsTrigger value="ai-insights">
+            AI Insights <Badge className="ml-2">{caseActions.filter(a => ['orchestrator', 'docu', 'sherlock', 'analysis'].includes(a.agentType)).length}</Badge>
+          </TabsTrigger>
           <TabsTrigger value="actions">
             Agent Actions <Badge className="ml-2">{caseActions.length}</Badge>
           </TabsTrigger>
@@ -517,6 +538,65 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
             })
           )}
 
+        </TabsContent>
+
+        <TabsContent value="ai-insights" className="space-y-4">
+          {caseActions.filter(a => ['orchestrator', 'docu', 'sherlock', 'analysis'].includes(a.agentType)).length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <Sparkles className="h-12 w-12 text-muted-foreground mb-4" />
+                <p className="text-lg font-medium">No AI insights yet</p>
+                <p className="text-sm text-muted-foreground mb-4">Use AI Analysis to get strategic recommendations</p>
+                <AIAnalysisDialog
+                  caseId={id}
+                  files={case_.files}
+                  onAnalysisComplete={() => fetchCase()}
+                />
+              </CardContent>
+            </Card>
+          ) : (
+            caseActions
+              .filter(a => ['orchestrator', 'docu', 'sherlock', 'analysis'].includes(a.agentType))
+              .map((insight) => (
+                <Card key={insight.id}>
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1 flex-1">
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="h-5 w-5 text-purple-500" />
+                          <CardTitle className="text-base">{insight.action}</CardTitle>
+                          {insight.confidence && (
+                            <Badge
+                              variant={
+                                insight.confidence >= 0.8
+                                  ? "default"
+                                  : insight.confidence >= 0.5
+                                    ? "secondary"
+                                    : "outline"
+                              }
+                            >
+                              {Math.round(insight.confidence * 100)}% confidence
+                            </Badge>
+                          )}
+                        </div>
+                        <CardDescription>AI Agent: {insight.agentType}</CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div>
+                      <p className="text-sm font-medium mb-1">Analysis</p>
+                      <div className="text-sm text-muted-foreground whitespace-pre-wrap">
+                        {insight.reasoning}
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(insight.timestamp).toLocaleString()}
+                    </p>
+                  </CardContent>
+                </Card>
+              ))
+          )}
         </TabsContent>
 
         <TabsContent value="actions" className="space-y-4">

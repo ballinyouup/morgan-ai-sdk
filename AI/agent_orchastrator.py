@@ -219,11 +219,15 @@ Please respond with your logical analysis. If you've reached a consensus or have
         # Generate consensus summary
         consensus = await self._generate_consensus(user_request, final_conversation)
         
+        # Generate actionable tasks
+        tasks = await self._generate_actionable_tasks(user_request, {"consensus": consensus}, file_contents)
+        
         return {
             "conversation_id": conversation_id,
             "iterations": len(final_conversation),
             "conversation": final_conversation,
-            "consensus": consensus
+            "consensus": consensus,
+            "tasks": tasks
         }
     
     def _format_conversation_history(self, history: List[Dict[str, Any]]):
@@ -267,6 +271,81 @@ Provide a clear, actionable summary that combines both perspectives."""
             contents=prompt
         )
         return response.text
+    
+    async def _generate_actionable_tasks(self, user_request: str, analysis_result: Dict[str, Any], file_contents: List[Dict[str, str]]):
+        """Generate specific actionable tasks based on the analysis"""
+        
+        # Build context from analysis
+        context = f"""User Request: {user_request}
+
+Analysis Summary: {analysis_result.get('consensus', '')}
+
+Files Analyzed: {len(file_contents)} documents
+"""
+        
+        prompt = f"""{context}
+
+Based on this case analysis, generate 3-7 specific, actionable tasks that a legal assistant or paralegal should complete.
+
+For each task, provide:
+1. Title (brief, action-oriented)
+2. Description (what needs to be done and why)
+3. Priority (high, medium, or low)
+4. Category (document, communication, research, deadline, or follow-up)
+5. Estimated time (e.g., "30 minutes", "2-3 days")
+6. Reasoning (why this task is important)
+
+Format as JSON array:
+[
+  {{
+    "title": "Request Medical Records",
+    "description": "Obtain complete medical records from Dr. Smith to establish treatment timeline",
+    "priority": "high",
+    "category": "document",
+    "estimatedTime": "2-3 days",
+    "reasoning": "Medical records are critical for calculating damages and establishing causation"
+  }}
+]
+
+Focus on tasks that are:
+- Specific and actionable
+- Time-sensitive or high-impact
+- Within the scope of paralegal/legal assistant work
+- Based on actual gaps or needs identified in the analysis
+
+Return ONLY the JSON array, no other text."""
+
+        try:
+            response = self.client.models.generate_content(
+                model=self.model_id,
+                contents=prompt
+            )
+            
+            # Parse JSON response
+            import json
+            import re
+            
+            response_text = response.text.strip()
+            # Extract JSON if wrapped in markdown code blocks
+            json_match = re.search(r'```(?:json)?\s*(\[.*?\])\s*```', response_text, re.DOTALL)
+            if json_match:
+                response_text = json_match.group(1)
+            
+            tasks = json.loads(response_text)
+            return tasks
+        except Exception as e:
+            print(f"Error generating tasks: {e}")
+            # Return default tasks if generation fails
+            return [
+                {
+                    "title": "Review Case Analysis",
+                    "description": "Review the AI-generated analysis and verify key findings",
+                    "priority": "high",
+                    "category": "follow-up",
+                    "estimatedTime": "30 minutes",
+                    "reasoning": "Ensure AI analysis aligns with case facts"
+                }
+            ]
     
     async def process_request(self, user_request: str, file_urls: List[str], return_address: Optional[str] = None):
         print(f"🎭 Orchestrator: Processing request with {len(file_urls)} files")

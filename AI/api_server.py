@@ -264,6 +264,49 @@ async def get_test_file_urls():
     }
 
 
+@app.post("/api/orchestrator/analyze")
+async def orchestrator_analyze(request: ProcessFilesRequest):
+    """
+    Synchronous endpoint for immediate case analysis
+    Used by the frontend for real-time AI insights
+    """
+    if orchestrator is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Service unavailable: Orchestrator not initialized. Set GOOGLE_API_KEY environment variable."
+        )
+    
+    if not request.file_urls:
+        raise HTTPException(status_code=400, detail="At least one file URL required")
+    
+    if not request.user_request:
+        raise HTTPException(status_code=400, detail="User request is required")
+    
+    try:
+        print(f"🎭 Orchestrator: Processing immediate analysis request")
+        
+        # Process through orchestrator
+        result = await orchestrator.process_request(
+            user_request=request.user_request,
+            file_urls=request.file_urls,
+            return_address=request.return_address
+        )
+        
+        return {
+            "status": "success",
+            "agent_type": result.get("agent_type"),
+            "workflow": result.get("workflow"),
+            "response": result.get("response"),
+            "analysis": result.get("analysis"),
+            "files_processed": result.get("files_processed"),
+            "file_contents": result.get("file_contents")
+        }
+        
+    except Exception as e:
+        print(f"❌ Analysis failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
+
+
 @app.get("/api/test/scenarios")
 async def get_test_scenarios():
     return {

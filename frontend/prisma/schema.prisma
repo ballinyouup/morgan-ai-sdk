@@ -28,6 +28,7 @@ model Case {
   textMessages TextMessage[]
   phoneCalls PhoneCall[]
   reasonChains ReasonChain[]
+  aiTasks AITask[]
 }
 
 model Chat {
@@ -107,4 +108,24 @@ model ReasonChain {
   data        Json?    // Additional data as JSON
   confidence  Float?
   timestamp   DateTime @default(now())
+}
+
+// AI-generated actionable tasks
+model AITask {
+  id          String   @id @default(cuid())
+  caseId      String
+  case        Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  title       String
+  description String   @db.Text
+  priority    String   // high, medium, low
+  category    String   // document, communication, research, deadline, follow-up
+  status      String   @default("pending") // pending, in-progress, completed, dismissed
+  estimatedTime String?
+  dueDate     DateTime?
+  completedAt DateTime?
+  createdBy   String   // AI agent that created it
+  reasoning   String?  @db.Text // Why this task was recommended
+  relatedTo   String?  // Related reasonChainId or analysisId
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

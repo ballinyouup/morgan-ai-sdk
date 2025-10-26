@@ -103,7 +103,7 @@ Always remember: You draft - humans approve. Client satisfaction is paramount.
 """
     
     def analyze_emotion(self, message: str):
-        pipe = pipeline("text-classification", model="tabularisai/multilingual-sentiment-analysis", device=self.device, truncation=True, max_length=512)
+        pipe = pipeline("text-classification", model="tabularisai/multilingual-sentiment-analysis", truncation=True, max_length=512)
         # Truncate message to avoid exceeding model's max sequence length
         # Using 400 tokens worth of chars (~1600 chars) to be safe
         truncated_message = message[:1600] if len(message) > 1600 else message
