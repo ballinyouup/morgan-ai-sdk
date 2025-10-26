@@ -25,7 +25,7 @@ const Landing: React.FC<{ onToggle?: ViewToggle }> = ({ onToggle }) => (
         {/* Main content */}
         <div className="flex flex-col items-center justify-center h-[calc(100vh-120px)] px-4">
           <h1 className="font-serif text-5xl md:text-6xl lg:text-7xl text-center mb-16 text-white text-balance drop-shadow-lg">
-            Welcome to Simply Legal AI Consulting
+            Welcome to Simply Law Consulting
           </h1>
 
           {/* Button positioned in center */}
