@@ -1,0 +1,547 @@
+{
+  "case_name": "case_2",
+  "analysis_date": "2025-10-25 19:34:29",
+  "document_processing": {
+    "total_files": 5,
+    "successful": 5,
+    "failed": 0,
+    "by_type": {
+      "pdf": 5
+    }
+  },
+  "timeline_analysis": {
+    "timeline": [
+      {
+        "date": "03/03/2019",
+        "source": "EST-TOTALLOSS--14593-84-04-15-2019-16-18-02_Redacted.pdf",
+        "document_type": "police_report"
+      },
+      {
+        "date": "03/26/2019",
+        "source": "EST-TOTALLOSS--14593-84-04-15-2019-16-18-02_Redacted.pdf",
+        "document_type": "police_report"
+      },
+      {
+        "date": "04/01/2019",
+        "source": "EST-TOTALLOSS--14593-84-04-15-2019-16-18-02_Redacted.pdf",
+        "document_type": "police_report"
+      },
+      {
+        "date": "04/05/2017",
+        "source": "EST-TOTALLOSS--14593-84-04-15-2019-16-18-02_Redacted.pdf",
+        "document_type": "police_report"
+      },
+      {
+        "date": "04/13/2019",
+        "source": "EST-PHOTOS-04-15-2019_Redacted.pdf",
+        "document_type": "insurance"
+      },
+      {
+        "date": "04/13/2019",
+        "source": "EST-PHOTOS-04-15-2019_Redacted.pdf",
+        "document_type": "insurance"
+      },
+      {
+        "date": "04/13/2019",
+        "source": "EST-PHOTOS-04-15-2019_Redacted.pdf",
+        "document_type": "insurance"
+      },
+      {
+        "date": "04/13/2019",
+        "source": "EST-PHOTOS-04-15-2019_Redacted.pdf",
+        "document_type": "insurance"
+      },
+      {
+        "date": "04/13/2019",
+        "source": "EST-PHOTOS-04-15-2019_Redacted.pdf",
+        "document_type": "insurance"
+      },
+      {
+        "date": "04/13/2019",
+        "source": "EST-PHOTOS-04-15-2019_Redacted.pdf",
+        "document_type": "insurance"
+      },
+      {
+        "date": "04/13/2019",
+        "source": "EST-PHOTOS-04-15-2019_Redacted.pdf",
+        "document_type": "insurance"
+      },
+      {
+        "date": "04/13/2019",
+        "source": "EST-PHOTOS-04-15-2019_Redacted.pdf",
+        "document_type": "insurance"
+      },
+      {
+        "date": "04/13/2019",
+        "source": "EST-PHOTOS-04-15-2019_Redacted.pdf",
+        "document_type": "insurance"
+      },
+      {
+        "date": "04/13/2019",
+        "source": "EST-PHOTOS-04-15-2019_Redacted.pdf",
+        "document_type": "insurance"
+      },
+      {
+        "date": "04/13/2019",
+        "source": "EST-TOTALLOSS--14593-84-04-15-2019-16-18-02_Redacted.pdf",
+        "document_type": "police_report"
+      },
+      {
+        "date": "04/15/2019",
+        "source": "EST-TOTALLOSS--14593-84-04-15-2019-16-18-02_Redacted.pdf",
+        "document_type": "police_report"
+      },
+      {
+        "date": "04/19/2017",
+        "source": "EST-TOTALLOSS--14593-84-04-15-2019-16-18-02_Redacted.pdf",
+        "document_type": "police_report"
+      },
+      {
+        "date": "04/19/2017",
+        "source": "EST-TOTALLOSS--14593-84-04-15-2019-16-18-02_Redacted.pdf",
+        "document_type": "police_report"
+      },
+      {
+        "date": "09/08/2018",
+        "source": "EST-TOTALLOSS--14593-84-04-15-2019-16-18-02_Redacted.pdf",
+        "document_type": "police_report"
+      },
+      {
+        "date": "09/30/2016",
+        "source": "EST-TOTALLOSS--14593-84-04-15-2019-16-18-02_Redacted.pdf",
+        "document_type": "police_report"
+      },
+      {
+        "date": "10/31/2016",
+        "source": "Property damage estimate_Redacted.pdf",
+        "document_type": "insurance"
+      },
+      {
+        "date": "11/1/2018",
+        "source": "Property damage estimate_Redacted.pdf",
+        "document_type": "insurance"
+      },
+      {
+        "date": "4/13/2019",
+        "source": "Property damage estimate_Redacted.pdf",
+        "document_type": "insurance"
+      },
+      {
+        "date": "4/13/2019",
+        "source": "Property damage estimate_Redacted.pdf",
+        "document_type": "insurance"
+      },
+      {
+        "date": "4/13/2019",
+        "source": "Property damage estimate_Redacted.pdf",
+        "document_type": "insurance"
+      },
+      {
+        "date": "4/13/2019",
+        "source": "Property damage estimate_Redacted.pdf",
+        "document_type": "insurance"
+      },
+      {
+        "date": "4/15/2019",
+        "source": "Property damage estimate_Redacted.pdf",
+        "document_type": "insurance"
+      },
+      {
+        "date": "4/15/2019",
+        "source": "Property damage estimate_Redacted.pdf",
+        "document_type": "insurance"
+      },
+      {
+        "date": "4/30/2019",
+        "source": "Property damage estimate_Redacted.pdf",
+        "document_type": "insurance"
+      },
+      {
+        "date": "4/30/2019",
+        "source": "Property damage estimate_Redacted.pdf",
+        "document_type": "insurance"
+      }
+    ],
+    "total_events": 30,
+    "date_range": {
+      "earliest": "03/03/2019",
+      "latest": "4/30/2019"
+    },
+    "documents_with_dates": 3,
+    "critical_dates": []
+  },
+  "inconsistencies": {
+    "total_inconsistencies": 2,
+    "inconsistencies": [
+      {
+        "type": "amount_discrepancy",
+        "severity": "medium",
+        "description": "Found 9 different dollar amounts across documents",
+        "details": {
+          "$ 14,664.00": [
+            "EST-TOTALLOSS--14593-84-04-15-2019-16-18-02_Redacted.pdf",
+            "EST-TOTALLOSS--14593-84-04-15-2019-16-18-02_Redacted.pdf",
+            "Property damage estimate_Redacted.pdf",
+            "Property damage estimate_Redacted.pdf"
+          ],
+          "$ 929.84": [
+            "EST-TOTALLOSS--14593-84-04-15-2019-16-18-02_Redacted.pdf"
+          ],
+          "$ 15,593.84": [
+            "EST-TOTALLOSS--14593-84-04-15-2019-16-18-02_Redacted.pdf",
+            "Property damage estimate_Redacted.pdf"
+          ],
+          "$ 1,000.00": [
+            "EST-TOTALLOSS--14593-84-04-15-2019-16-18-02_Redacted.pdf"
+          ],
+          "$ 14,593.84": [
+            "EST-TOTALLOSS--14593-84-04-15-2019-16-18-02_Redacted.pdf",
+            "Property damage estimate_Redacted.pdf"
+          ]
+        }
+      },
+      {
+        "type": "missing_document_types",
+        "severity": "high",
+        "description": "Missing critical document types: medical, financial",
+        "recommendation": "Request these documents to strengthen the case"
+      }
+    ],
+    "severity_breakdown": {
+      "high": 1,
+      "medium": 1,
+      "low": 0
+    },
+    "requires_investigation": true
+  },
+  "missing_evidence": {
+    "case_type": "personal_injury",
+    "expected_evidence_count": 10,
+    "found_evidence_count": 4,
+    "missing_evidence": [
+      "medical_records",
+      "medical_bills",
+      "wage_statements",
+      "insurance_policy",
+      "insurance_correspondence",
+      "photos_of_injuries",
+      "accident_scene_photos",
+      "witness_statements",
+      "expert_reports"
+    ],
+    "completion_percentage": 40.0,
+    "priority_requests": [
+      "medical_records",
+      "medical_bills",
+      "wage_statements",
+      "insurance_policy",
+      "insurance_correspondence"
+    ],
+    "recommendations": [
+      "Request medical records",
+      "Request medical bills",
+      "Request wage statements",
+      "Request insurance policy",
+      "Request insurance correspondence"
+    ]
+  },
+  "damage_calculation": {
+    "economic_damages": {
+      "medical_expenses": 0,
+      "property_damage": 104219.31999999999,
+      "lost_wages": 0,
+      "other_expenses": 61445.520000000004,
+      "total": 165664.84
+    },
+    "non_economic_damages_estimate": {
+      "low": 248497.26,
+      "high": 828324.2,
+      "factors": [
+        "Severity of injury",
+        "Impact on quality of life",
+        "Duration of recovery"
+      ]
+    },
+    "total_case_value_range": {
+      "low": 414162.1,
+      "high": 993989.0399999999
+    },
+    "damage_breakdown": {
+      "medical_expenses": [],
+      "property_damage": [
+        {
+          "amount": "$ 7,612.76",
+          "source": "Property damage estimate_Redacted.pdf",
+          "value": 7612.76
+        },
+        {
+          "amount": "$ 14,664.00",
+          "source": "Property damage estimate_Redacted.pdf",
+          "value": 14664.0
+        },
+        {
+          "amount": "$ 7,612.76",
+          "source": "Property damage estimate_Redacted.pdf",
+          "value": 7612.76
+        },
+        {
+          "amount": "$ 14,664.00",
+          "source": "Property damage estimate_Redacted.pdf",
+          "value": 14664.0
+        },
+        {
+          "amount": "$ 8,119.53",
+          "source": "Property damage estimate_Redacted.pdf",
+          "value": 8119.53
+        },
+        {
+          "amount": "$ 15,593.84",
+          "source": "Property damage estimate_Redacted.pdf",
+          "value": 15593.84
+        },
+        {
+          "amount": "$ 7,119.53",
+          "source": "Property damage estimate_Redacted.pdf",
+          "value": 7119.53
+        },
+        {
+          "amount": "$ 14,593.84",
+          "source": "Property damage estimate_Redacted.pdf",
+          "value": 14593.84
+        },
+        {
+          "amount": "$ 7,119.53",
+          "source": "Property damage estimate_Redacted.pdf",
+          "value": 7119.53
+        },
+        {
+          "amount": "$ 7,119.53",
+          "source": "Property damage estimate_Redacted.pdf",
+          "value": 7119.53
+        }
+      ],
+      "lost_wages": [],
+      "other_expenses": [
+        {
+          "amount": "$ 14,664.00",
+          "source": "EST-TOTALLOSS--14593-84-04-15-2019-16-18-02_Redacted.pdf",
+          "value": 14664.0
+        },
+        {
+          "amount": "$ 14,664.00",
+          "source": "EST-TOTALLOSS--14593-84-04-15-2019-16-18-02_Redacted.pdf",
+          "value": 14664.0
+        },
+        {
+          "amount": "$ 929.84",
+          "source": "EST-TOTALLOSS--14593-84-04-15-2019-16-18-02_Redacted.pdf",
+          "value": 929.84
+        },
+        {
+          "amount": "$ 15,593.84",
+          "source": "EST-TOTALLOSS--14593-84-04-15-2019-16-18-02_Redacted.pdf",
+          "value": 15593.84
+        },
+        {
+          "amount": "$ 1,000.00",
+          "source": "EST-TOTALLOSS--14593-84-04-15-2019-16-18-02_Redacted.pdf",
+          "value": 1000.0
+        },
+        {
+          "amount": "$ 14,593.84",
+          "source": "EST-TOTALLOSS--14593-84-04-15-2019-16-18-02_Redacted.pdf",
+          "value": 14593.84
+        },
+        {
+          "amount": "$ 0",
+          "source": "EST-TOTALLOSS--14593-84-04-15-2019-16-18-02_Redacted.pdf",
+          "value": 0.0
+        },
+        {
+          "amount": "$ 0",
+          "source": "EST-TOTALLOSS--14593-84-04-15-2019-16-18-02_Redacted.pdf",
+          "value": 0.0
+        },
+        {
+          "amount": "$ 0",
+          "source": "EST-TOTALLOSS--14593-84-04-15-2019-16-18-02_Redacted.pdf",
+          "value": 0.0
+        },
+        {
+          "amount": "$ 0",
+          "source": "EST-TOTALLOSS--14593-84-04-15-2019-16-18-02_Redacted.pdf",
+          "value": 0.0
+        }
+      ]
+    }
+  },
+  "liability_analysis": {
+    "liability_assessment": {
+      "clear_liability": [],
+      "shared_liability": [],
+      "disputed_liability": [
+        "EST-TOTALLOSS--14593-84-04-15-2019-16-18-02_Redacted.pdf"
+      ]
+    },
+    "clear_fault_documents": 0,
+    "disputed_documents": 1,
+    "recommendation": "Liability may be contested"
+  },
+  "legal_issues": {
+    "identified_issues": [
+      {
+        "issue": "damages",
+        "found_in": "EST-PHOTOS-04-15-2019_Redacted.pdf",
+        "requires_research": true
+      },
+      {
+        "issue": "causation",
+        "found_in": "EST-TOTALLOSS--14593-84-04-15-2019-16-18-02_Redacted.pdf",
+        "requires_research": true
+      },
+      {
+        "issue": "statute_of_limitations",
+        "found_in": "EST-TOTALLOSS--14593-84-04-15-2019-16-18-02_Redacted.pdf",
+        "requires_research": true
+      },
+      {
+        "issue": "product_liability",
+        "found_in": "EST-TOTALLOSS--14593-84-04-15-2019-16-18-02_Redacted.pdf",
+        "requires_research": true
+      }
+    ],
+    "total_issues": 4,
+    "primary_cause_of_action": "damages",
+    "research_recommendations": [
+      "Research damages case law in jurisdiction",
+      "Research causation case law in jurisdiction",
+      "Research statute_of_limitations case law in jurisdiction"
+    ]
+  },
+  "settlement_evaluation": {
+    "full_case_value": {
+      "low": 414162.1,
+      "high": 993989.0399999999
+    },
+    "settlement_range": {
+      "low": 310621.57499999995,
+      "high": 894590.1359999999,
+      "target": 602605.8555
+    },
+    "liability_adjustment": "strong",
+    "negotiation_strategy": {
+      "initial_demand": 993989.0399999999,
+      "minimum_acceptable": 310621.57499999995,
+      "realistic_settlement": 760401.6155999999
+    }
+  },
+  "case_strategy": {
+    "strengths": [],
+    "weaknesses": [
+      "Limited documentation - gather more evidence",
+      "Lacking medical documentation - critical for damages"
+    ],
+    "opportunities": [
+      "High case value ($993,989.04) justifies litigation"
+    ],
+    "threats": [
+      "1 high-severity inconsistencies need resolution"
+    ],
+    "recommendations": [
+      "Address inconsistencies before settlement negotiations",
+      "Review statute of limitations deadlines",
+      "Prepare comprehensive demand letter with full documentation",
+      "Consider expert witness if case value justifies",
+      "Document ongoing treatment and damages",
+      "Preserve all evidence and maintain chain of custody"
+    ]
+  },
+  "next_steps": {
+    "next_steps": [
+      {
+        "priority": 1,
+        "action": "Gather Missing Evidence",
+        "details": "Request: medical_records, medical_bills, wage_statements",
+        "timeline": "Within 7 days"
+      },
+      {
+        "priority": 1,
+        "action": "Resolve Inconsistencies",
+        "details": "1 high-priority inconsistencies need investigation",
+        "timeline": "Immediate"
+      },
+      {
+        "priority": 2,
+        "action": "Prepare Demand Letter",
+        "details": "Target settlement: $602,605.86",
+        "timeline": "Within 14 days"
+      },
+      {
+        "priority": 3,
+        "action": "Conduct Legal Research",
+        "details": "Research damages case law in jurisdiction",
+        "timeline": "Within 7 days"
+      },
+      {
+        "priority": 3,
+        "action": "Review Statute of Limitations",
+        "details": "Confirm all deadlines are calendared",
+        "timeline": "Within 3 days"
+      },
+      {
+        "priority": 4,
+        "action": "Client Communication",
+        "details": "Update client on case status and analysis",
+        "timeline": "Within 7 days"
+      }
+    ],
+    "total_actions": 6,
+    "immediate_actions": [
+      {
+        "priority": 1,
+        "action": "Gather Missing Evidence",
+        "details": "Request: medical_records, medical_bills, wage_statements",
+        "timeline": "Within 7 days"
+      },
+      {
+        "priority": 1,
+        "action": "Resolve Inconsistencies",
+        "details": "1 high-priority inconsistencies need investigation",
+        "timeline": "Immediate"
+      }
+    ],
+    "short_term_actions": [
+      {
+        "priority": 2,
+        "action": "Prepare Demand Letter",
+        "details": "Target settlement: $602,605.86",
+        "timeline": "Within 14 days"
+      }
+    ],
+    "ongoing_actions": [
+      {
+        "priority": 3,
+        "action": "Conduct Legal Research",
+        "details": "Research damages case law in jurisdiction",
+        "timeline": "Within 7 days"
+      },
+      {
+        "priority": 3,
+        "action": "Review Statute of Limitations",
+        "details": "Confirm all deadlines are calendared",
+        "timeline": "Within 3 days"
+      },
+      {
+        "priority": 4,
+        "action": "Client Communication",
+        "details": "Update client on case status and analysis",
+        "timeline": "Within 7 days"
+      }
+    ]
+  },
+  "case_strength_score": {
+    "score": 82.0,
+    "rating": "Excellent",
+    "confidence": "moderate"
+  }
+}

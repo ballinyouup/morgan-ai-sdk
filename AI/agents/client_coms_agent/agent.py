@@ -31,8 +31,6 @@ class ClientCommunicationAgent:
                 self.draft_text_message,
                 self.draft_portal_message,
                 self.analyze_call_transcript,
-                self.extract_action_items,
-                self.detect_urgency_level,
             ],
         )
 
@@ -228,66 +226,6 @@ Always remember: You draft - humans approve. Client satisfaction is paramount.
         
         return analysis
     
-    def extract_action_items(self, text: str):
-        action_keywords = [
-            "need to", "should", "must", "will", "have to", "required",
-            "please", "can you", "could you", "would you", "send", "provide",
-            "schedule", "call", "review", "update", "follow up"
-        ]
-        
-        sentences = text.split('.')
-        action_items = []
-        
-        for sentence in sentences:
-            sentence_lower = sentence.lower()
-            if any(keyword in sentence_lower for keyword in action_keywords):
-                action_items.append({
-                    "text": sentence.strip(),
-                    "priority": "high" if any(word in sentence_lower for word in ["urgent", "asap", "immediately"]) else "normal",
-                    "assigned_to": "pending",  # To be assigned by human
-                    "deadline": "tbd"
-                })
-        
-        return action_items
-    
-    def detect_urgency_level(self, text: str):
-        """
-        Detects the urgency level of a message.
-        
-        Args:
-            text: The text to analyze
-        
-        Returns:
-            Urgency level: urgent, high, normal, low
-        """
-        text_lower = text.lower()
-        
-        urgent_keywords = ["urgent", "emergency", "immediately", "asap", "critical", "crisis"]
-        high_keywords = ["important", "soon", "deadline", "time-sensitive", "frustrated", "angry"]
-        
-        if any(keyword in text_lower for keyword in urgent_keywords):
-            return "urgent"
-        elif any(keyword in text_lower for keyword in high_keywords):
-            return "high"
-        elif len(text) < 50:  # Very short messages might be quick questions
-            return "normal"
-        else:
-            return "normal"
-    
-        """Helper to extract key topics from text."""
-        # Simple keyword extraction (can be enhanced with NLP)
-        common_words = {"the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "is", "was", "be"}
-        words = text.lower().split()
-        word_freq = {}
-        
-        for word in words:
-            cleaned = word.strip('.,!?;:')
-            if len(cleaned) > 3 and cleaned not in common_words:
-                word_freq[cleaned] = word_freq.get(cleaned, 0) + 1
-        
-        # Get top 5 keywords
-        sorted_words = sorted(word_freq.items(), key=lambda x: x[1], reverse=True)
-        return [word for word, freq in sorted_words[:5]]
 
     async def process_communication(self, input_data):
         print(f"\n{'='*60}")
@@ -300,7 +238,6 @@ Always remember: You draft - humans approve. Client satisfaction is paramount.
         USER_ID = input_data['ID']['userid']
         SESSION_ID = input_data['ID']['sessionid']
 
-
         session_service = InMemorySessionService()
         await session_service.create_session(app_name=APP_NAME, user_id=USER_ID, session_id=SESSION_ID)
 
@@ -312,16 +249,13 @@ Always remember: You draft - humans approve. Client satisfaction is paramount.
             if event.is_final_response():
                 return event.content.parts[0].text
  
-# if __name__ == "__main__":
-#     agent = ClientCommunicationAgent()
+if __name__ == "__main__":
+    agent = ClientCommunicationAgent()
     
-#     test_message = "I'm really frustrated. It's been 3 weeks and I haven't heard anything about my case!"
-#     result = asyncio.run(agent.process_communication({
-#         "message": test_message,
-#         "ID": {"userid": "user1", "sessionid": "session1"}
-#     }))
+    test_message = "I'm really frustrated. It's been 3 weeks and I haven't heard anything about my case :("
+    result = asyncio.run(agent.process_communication({
+        "message": test_message,
+        "ID": {"userid": "user1", "sessionid": "session1"}
+    }))
 
-#     print("comms agent result:", result)
-
-
-agent = ClientCommunicationAgent()
+    print("comms agent result:", result)
