@@ -1,3 +1,3 @@
-from agent import SherlockAgent
+from .agent import SherlockAgent
 
 __all__ = ['SherlockAgent']

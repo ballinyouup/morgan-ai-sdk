@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { mockCases, mockCommunications, mockAgentActions, mockCaseFiles } from "@/lib/mock-data"
 import {
   ArrowLeft,
   Mail,
@@ -23,21 +22,119 @@ import {
   FileImage,
 } from "lucide-react"
 import { notFound } from "next/navigation"
+import { use, useEffect, useState } from "react"
+
+interface CaseData {
+  id: string
+  clientName: string
+  caseType: string
+  status: string
+  priority: string
+  assignedTo: string
+  createdAt: string
+  lastActivity: string
+  description: string
+  nextAction?: string
+  emails: Array<{
+    id: string
+    from: string
+    to: string
+    subject: string
+    content: string
+    createdAt: string
+  }>
+  files: Array<{
+    id: string
+    name: string
+    url: string
+    type: string
+    size: string
+    uploadedAt: string
+    uploadedBy: string
+  }>
+  textMessages: Array<{
+    id: string
+    from: string
+    to: string
+    text: string
+    createdAt: string
+  }>
+  reasonChains: Array<{
+    id: string
+    agentType: string
+    action: string
+    reasoning: string
+    confidence?: number
+    timestamp: string
+  }>
+}
+
+export default function CaseDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params)
+  const [case_, setCase] = useState<CaseData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function fetchCase() {
+      try {
+        setLoading(true)
+        const response = await fetch(`/api/cases/${id}`)
+        
+        if (!response.ok) {
+          if (response.status === 404) {
+            notFound()
+          }
+          throw new Error('Failed to fetch case')
+        }
+        
+        const data = await response.json()
+        setCase(data)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchCase()
+  }, [id])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Clock className="h-12 w-12 text-muted-foreground mb-4 mx-auto animate-spin" />
+          <p className="text-lg font-medium">Loading case details...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error || !case_) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <AlertCircle className="h-12 w-12 text-destructive mb-4 mx-auto" />
+          <p className="text-lg font-medium">Error loading case</p>
+          <p className="text-sm text-muted-foreground">{error || 'Case not found'}</p>
+        </div>
+      </div>
+    )
+  }
+
+  const caseCommunications = case_.emails
+  const caseActions = case_.reasonChains
+  const caseFiles = case_.files
 
 export default function CaseDetailPage({ params }: { params: Promise<{ id: string }> }) {
   // `params` can be a promise in the app router. Unwrap it with React.use() in a client
   // component before accessing properties.
   const { id } = React.use(params)
 
-  const case_ = mockCases.find((c) => c.id === id)
-
   if (!case_) {
     notFound()
   }
-
-  const caseCommunications = mockCommunications.filter((c) => c.caseId === id)
-  const caseActions = mockAgentActions.filter((a) => a.caseId === id)
-  const caseFiles = mockCaseFiles.filter((f) => f.caseId === id)
 
   const getFileIcon = (type: string) => {
     switch (type) {
@@ -192,10 +289,7 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                      {comm.type === "email" && <Mail className="h-5 w-5 text-muted-foreground" />}
-                      {comm.type === "call" && <Phone className="h-5 w-5 text-muted-foreground" />}
-                      {comm.type === "meeting" && <Calendar className="h-5 w-5 text-muted-foreground" />}
-                      {comm.type === "document" && <FileText className="h-5 w-5 text-muted-foreground" />}
+                      <Mail className="h-5 w-5 text-muted-foreground" />
                       <div>
                         <CardTitle className="text-base">{comm.subject}</CardTitle>
                         <CardDescription>
@@ -203,25 +297,12 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
                         </CardDescription>
                       </div>
                     </div>
-                    <Badge variant="outline">{comm.type}</Badge>
+                    <Badge variant="outline">email</Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <p className="text-sm text-muted-foreground whitespace-pre-line">{comm.content}</p>
-                  {comm.attachments && comm.attachments.length > 0 && (
-                    <div className="pt-2 border-t">
-                      <p className="text-xs font-medium mb-2">Attachments:</p>
-                      <div className="flex flex-wrap gap-2">
-                        {comm.attachments.map((attachment, idx) => (
-                          <Badge key={idx} variant="secondary">
-                            <FileText className="h-3 w-3 mr-1" />
-                            {attachment}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  <p className="text-xs text-muted-foreground">{new Date(comm.date).toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground">{new Date(comm.createdAt).toLocaleString()}</p>
                 </CardContent>
               </Card>
             ))
@@ -248,32 +329,23 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <CardTitle className="text-base">{action.actionType}</CardTitle>
-                        <Badge
-                          variant={
-                            action.impact === "high"
-                              ? "destructive"
-                              : action.impact === "medium"
+                        <CardTitle className="text-base">{action.action}</CardTitle>
+                        {action.confidence && (
+                          <Badge
+                            variant={
+                              action.confidence >= 0.8
                                 ? "default"
-                                : "secondary"
-                          }
-                        >
-                          {action.impact} impact
-                        </Badge>
+                                : action.confidence >= 0.5
+                                  ? "secondary"
+                                  : "outline"
+                            }
+                          >
+                            {Math.round(action.confidence * 100)}% confidence
+                          </Badge>
+                        )}
                       </div>
-                      <CardDescription>{action.description}</CardDescription>
+                      <CardDescription>{action.agentType}</CardDescription>
                     </div>
-                    <Badge
-                      variant={
-                        action.status === "approved"
-                          ? "default"
-                          : action.status === "rejected"
-                            ? "destructive"
-                            : "secondary"
-                      }
-                    >
-                      {action.status}
-                    </Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -282,7 +354,7 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
                     <p className="text-sm text-muted-foreground">{action.reasoning}</p>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Suggested by {action.suggestedBy} on {new Date(action.createdAt).toLocaleString()}
+                    {new Date(action.timestamp).toLocaleString()}
                   </p>
                 </CardContent>
               </Card>

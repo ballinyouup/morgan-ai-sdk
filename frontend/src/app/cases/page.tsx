@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -8,16 +8,63 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { mockCases } from "@/lib/mock-data"
-import { Search, Filter, ArrowUpDown } from "lucide-react"
+import { Search, Filter, ArrowUpDown, Clock, AlertCircle } from "lucide-react"
 import type { Case, CaseStatus } from "@/lib/types"
 
 export default function CasesPage() {
+  const [cases, setCases] = useState<Case[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [sortBy, setSortBy] = useState<"date" | "priority">("date")
   const [filterStatus, setFilterStatus] = useState<CaseStatus | "all">("all")
 
-  const filteredCases = mockCases
+  useEffect(() => {
+    async function fetchCases() {
+      try {
+        setLoading(true)
+        const response = await fetch('/api/cases')
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch cases')
+        }
+        
+        const data = await response.json()
+        setCases(data)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchCases()
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Clock className="h-12 w-12 text-muted-foreground mb-4 mx-auto animate-spin" />
+          <p className="text-lg font-medium">Loading cases...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <AlertCircle className="h-12 w-12 text-destructive mb-4 mx-auto" />
+          <p className="text-lg font-medium">Error loading cases</p>
+          <p className="text-sm text-muted-foreground">{error}</p>
+        </div>
+      </div>
+    )
+  }
+
+  const filteredCases = cases
     .filter((case_) => {
       const matchesSearch =
         case_.clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||

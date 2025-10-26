@@ -1,28 +1,125 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { mockAgentActions } from "@/lib/mock-data"
 import { Check, X, Clock, AlertCircle, ChevronDown, ChevronUp } from "lucide-react"
-import type { AgentAction } from "@/lib/types"
+import Link from "next/link"
+
+type AgentActionStatus = "pending" | "approved" | "rejected"
+
+interface AgentAction {
+  id: string
+  caseId: string
+  caseName: string
+  actionType: string
+  description: string
+  suggestedBy: string
+  status: AgentActionStatus
+  createdAt: string
+  reasoning: string
+  impact: "low" | "medium" | "high"
+  confidence?: number
+  case: {
+    id: string
+    clientName: string
+    caseType: string
+  }
+}
 
 export default function ActionsPage() {
-  const [actions, setActions] = useState(mockAgentActions)
+  const [actions, setActions] = useState<AgentAction[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [expandedAction, setExpandedAction] = useState<string | null>(null)
 
-  const handleApprove = (actionId: string) => {
-    setActions((prev) => prev.map((a) => (a.id === actionId ? { ...a, status: "approved" as const } : a)))
+  useEffect(() => {
+    fetchActions()
+  }, [])
+
+  async function fetchActions() {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/actions')
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch actions')
+      }
+      
+      const data = await response.json()
+      setActions(data)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleReject = (actionId: string) => {
-    setActions((prev) => prev.map((a) => (a.id === actionId ? { ...a, status: "rejected" as const } : a)))
+  const handleApprove = async (actionId: string) => {
+    try {
+      const response = await fetch(`/api/actions/${actionId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'approved' })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to approve action')
+      }
+
+      const updatedAction = await response.json()
+      setActions((prev) => prev.map((a) => (a.id === actionId ? updatedAction : a)))
+    } catch (err) {
+      console.error('Error approving action:', err)
+    }
+  }
+
+  const handleReject = async (actionId: string) => {
+    try {
+      const response = await fetch(`/api/actions/${actionId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'rejected' })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to reject action')
+      }
+
+      const updatedAction = await response.json()
+      setActions((prev) => prev.map((a) => (a.id === actionId ? updatedAction : a)))
+    } catch (err) {
+      console.error('Error rejecting action:', err)
+    }
   }
 
   const toggleExpand = (actionId: string) => {
     setExpandedAction(expandedAction === actionId ? null : actionId)
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Clock className="h-12 w-12 text-muted-foreground mb-4 mx-auto animate-spin" />
+          <p className="text-lg font-medium">Loading actions...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <AlertCircle className="h-12 w-12 text-destructive mb-4 mx-auto" />
+          <p className="text-lg font-medium">Error loading actions</p>
+          <p className="text-sm text-muted-foreground">{error}</p>
+        </div>
+      </div>
+    )
   }
 
   const pendingActions = actions.filter((a) => a.status === "pending")
@@ -187,7 +284,11 @@ function ActionCard({ action, onApprove, onReject, expanded, onToggleExpand }: A
                 </Badge>
               )}
             </div>
-            <CardDescription>{action.caseName}</CardDescription>
+            <CardDescription>
+              <Link href={`/cases/${action.case.id}`} className="hover:underline">
+                {action.caseName}
+              </Link>
+            </CardDescription>
           </div>
           <Button variant="ghost" size="sm" onClick={() => onToggleExpand(action.id)}>
             {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
