@@ -5,7 +5,6 @@ generator client {
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
 }
 
 model Case {
@@ -13,6 +12,7 @@ model Case {
   caseType String
   clientName String
   clientDob String
+  clientPhone String?
   caseNumber String @unique
   createdAt DateTime @default(now())
   lastActivity DateTime @default(now())
@@ -26,6 +26,7 @@ model Case {
   files Files[]
   chats  Chat[]
   textMessages TextMessage[]
+  phoneCalls PhoneCall[]
   reasonChains ReasonChain[]
 }
 
@@ -77,6 +78,20 @@ model TextMessage {
   text String
   from String
   to String
+}
+
+model PhoneCall {
+  id     String @id @default(cuid())
+  caseId String
+  case   Case   @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  phoneNumber String
+  message String @db.Text
+  callSid String?
+  status String @default("initiated") // initiated, completed, failed, no-answer
+  duration Int? // duration in seconds
+  statusBeforeCall String? // case status before the call
+  statusAfterCall String? // case status after the call
 }
 
 // Transparent Reason Chain for explainability

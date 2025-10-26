@@ -7,6 +7,25 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
   ArrowLeft,
   Mail,
@@ -19,9 +38,11 @@ import {
   Download,
   FileAudio,
   FileImage,
+  Loader2,
 } from "lucide-react"
 import { notFound } from "next/navigation"
 import { use, useEffect, useState } from "react"
+import { EmailComposeDialog } from "@/components/email-compose-dialog"
 
 interface CaseData {
   id: string
@@ -34,6 +55,7 @@ interface CaseData {
   lastActivity: string
   description: string
   nextAction?: string
+  clientPhone?: string
   emails: Array<{
     id: string
     from: string
@@ -58,6 +80,17 @@ interface CaseData {
     text: string
     createdAt: string
   }>
+  phoneCalls: Array<{
+    id: string
+    phoneNumber: string
+    message: string
+    callSid?: string
+    status: string
+    duration?: number
+    statusBeforeCall?: string
+    statusAfterCall?: string
+    createdAt: string
+  }>
   reasonChains: Array<{
     id: string
     agentType: string
@@ -73,31 +106,102 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
   const [case_, setCase] = useState<CaseData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [callDialogOpen, setCallDialogOpen] = useState(false)
+  const [phoneNumber, setPhoneNumber] = useState("")
+  const [callMessage, setCallMessage] = useState("")
+  const [statusUpdate, setStatusUpdate] = useState("")
+  const [makingCall, setMakingCall] = useState(false)
 
   useEffect(() => {
-    async function fetchCase() {
-      try {
-        setLoading(true)
-        const response = await fetch(`/api/cases/${id}`)
-        
-        if (!response.ok) {
-          if (response.status === 404) {
-            notFound()
-          }
-          throw new Error('Failed to fetch case')
-        }
-        
-        const data = await response.json()
-        setCase(data)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred')
-      } finally {
-        setLoading(false)
-      }
-    }
-
     fetchCase()
   }, [id])
+
+  async function fetchCase() {
+    try {
+      setLoading(true)
+      const response = await fetch(`/api/cases/${id}`)
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          notFound()
+        }
+        throw new Error('Failed to fetch case')
+      }
+      
+      const data = await response.json()
+      setCase(data)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleStatusChange(newStatus: string) {
+    try {
+      const response = await fetch(`/api/cases/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update case status')
+      }
+
+      const updatedCase = await response.json()
+      setCase(updatedCase)
+    } catch (err) {
+      console.error('Error updating case status:', err)
+      setError(err instanceof Error ? err.message : 'Failed to update status')
+    }
+  }
+
+  async function handleMakeCall() {
+    if (!phoneNumber || !callMessage) {
+      setError('Phone number and message are required')
+      return
+    }
+
+    try {
+      setMakingCall(true)
+      const response = await fetch(`/api/cases/${id}/call`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phoneNumber,
+          message: callMessage,
+          statusUpdate: statusUpdate || undefined
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to initiate call')
+      }
+
+      const data = await response.json()
+      setCase(data.case)
+      setCallDialogOpen(false)
+      setPhoneNumber("")
+      setCallMessage("")
+      setStatusUpdate("")
+      
+      // Show success message
+      alert('Call initiated successfully!')
+    } catch (err) {
+      console.error('Error making call:', err)
+      setError(err instanceof Error ? err.message : 'Failed to make call')
+    } finally {
+      setMakingCall(false)
+    }
+  }
+
+  function openCallDialog() {
+    setPhoneNumber(case_?.clientPhone || "")
+    setStatusUpdate(case_?.status || "")
+    setCallDialogOpen(true)
+  }
 
   if (loading) {
     return (
@@ -122,7 +226,9 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
     )
   }
 
-  const caseCommunications = case_.emails
+  const caseCommunications = [...case_.emails, ...case_.phoneCalls].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  )
   const caseActions = case_.reasonChains
   const caseFiles = case_.files
 
@@ -153,7 +259,78 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
           <h1 className="text-3xl font-bold tracking-tight">{case_.clientName}</h1>
           <p className="text-muted-foreground">{case_.caseType}</p>
         </div>
-        <Button>Edit Case</Button>
+        <Dialog open={callDialogOpen} onOpenChange={setCallDialogOpen}>
+          <DialogTrigger asChild>
+            <Button onClick={openCallDialog}>
+              <Phone className="h-4 w-4 mr-2" />
+              Call Client
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[525px]">
+            <DialogHeader>
+              <DialogTitle>Make Phone Call</DialogTitle>
+              <DialogDescription>
+                Update case status and make a phone call to the client. The status will be updated before the call is made.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="phone">Phone Number</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder="+1234567890"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="status">Update Status (Optional)</Label>
+                <Select value={statusUpdate} onValueChange={setStatusUpdate}>
+                  <SelectTrigger id="status">
+                    <SelectValue placeholder="Select new status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="open">Open</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="on-hold">On Hold</SelectItem>
+                    <SelectItem value="closed">Closed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="message">Call Message</Label>
+                <Textarea
+                  id="message"
+                  placeholder="Enter the message to be spoken during the call..."
+                  value={callMessage}
+                  onChange={(e) => setCallMessage(e.target.value)}
+                  rows={4}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setCallDialogOpen(false)}
+                disabled={makingCall}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleMakeCall} disabled={makingCall}>
+                {makingCall && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                {makingCall ? 'Submitting...' : 'Submit & Call'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+          <EmailComposeDialog
+              caseId={id}
+              defaultSubject={`Re: ${case_.caseType} - ${case_.clientName}`}
+              onEmailSent={(updatedCase) => setCase(updatedCase)}
+          />
+        <Button variant="outline">Edit Case</Button>
       </div>
 
       {/* Case Overview */}
@@ -171,7 +348,18 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
               >
                 {case_.priority} priority
               </Badge>
-              <Badge variant="outline">{case_.status}</Badge>
+              <Select value={case_.status} onValueChange={handleStatusChange}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="open">Open</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="on-hold">On Hold</SelectItem>
+                  <SelectItem value="closed">Closed</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-3">
@@ -274,33 +462,55 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
               </CardContent>
             </Card>
           ) : (
-            caseCommunications.map((comm) => (
-              <Card key={comm.id}>
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <Mail className="h-5 w-5 text-muted-foreground" />
-                      <div>
-                        <CardTitle className="text-base">{comm.subject}</CardTitle>
-                        <CardDescription>
-                          {comm.from} → {comm.to}
-                        </CardDescription>
+            caseCommunications.map((comm: any) => {
+              const isPhoneCall = 'phoneNumber' in comm
+              return (
+                <Card key={comm.id}>
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        {isPhoneCall ? (
+                          <Phone className="h-5 w-5 text-muted-foreground" />
+                        ) : (
+                          <Mail className="h-5 w-5 text-muted-foreground" />
+                        )}
+                        <div>
+                          <CardTitle className="text-base">
+                            {isPhoneCall ? `Phone Call to ${comm.phoneNumber}` : comm.subject}
+                          </CardTitle>
+                          <CardDescription>
+                            {isPhoneCall ? (
+                              <>
+                                Status: {comm.status}
+                                {comm.statusBeforeCall && comm.statusAfterCall && (
+                                  <> • Case: {comm.statusBeforeCall} → {comm.statusAfterCall}</>
+                                )}
+                              </>
+                            ) : (
+                              `${comm.from} → ${comm.to}`
+                            )}
+                          </CardDescription>
+                        </div>
                       </div>
+                      <Badge variant="outline">{isPhoneCall ? 'phone' : 'email'}</Badge>
                     </div>
-                    <Badge variant="outline">email</Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <p className="text-sm text-muted-foreground whitespace-pre-line">{comm.content}</p>
-                  <p className="text-xs text-muted-foreground">{new Date(comm.createdAt).toLocaleString()}</p>
-                </CardContent>
-              </Card>
-            ))
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <p className="text-sm text-muted-foreground whitespace-pre-line">
+                      {isPhoneCall ? comm.message : comm.content}
+                    </p>
+                    {isPhoneCall && comm.duration && (
+                      <p className="text-xs text-muted-foreground">Duration: {comm.duration}s</p>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(comm.createdAt).toLocaleString()}
+                    </p>
+                  </CardContent>
+                </Card>
+              )
+            })
           )}
-          <Button className="w-full bg-transparent" variant="outline">
-            <Mail className="h-4 w-4 mr-2" />
-            New Communication
-          </Button>
+
         </TabsContent>
 
         <TabsContent value="actions" className="space-y-4">
